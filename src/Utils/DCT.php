@@ -1,0 +1,193 @@
+<?php
+
+namespace Tourze\BlindWatermark\Utils;
+
+/**
+ * 离散余弦变换(DCT)工具类
+ * 
+ * 参考资料：
+ * - https://en.wikipedia.org/wiki/Discrete_cosine_transform
+ * - 论文《A DCT-based robust watermarking scheme for digital images》
+ */
+class DCT
+{
+    /**
+     * 对二维图像数据进行DCT变换
+     *
+     * @param array $matrix 输入矩阵
+     * @return array 变换后的DCT系数矩阵
+     */
+    public static function forward(array $matrix): array
+    {
+        $m = count($matrix);
+        if ($m === 0) {
+            return [];
+        }
+        
+        $n = count($matrix[0]);
+        $result = array_fill(0, $m, array_fill(0, $n, 0.0));
+        
+        // 二维DCT变换实现
+        for ($u = 0; $u < $m; $u++) {
+            for ($v = 0; $v < $n; $v++) {
+                $sum = 0.0;
+                
+                // 计算α(u)和α(v)系数
+                $alpha_u = ($u === 0) ? 1 / sqrt(2) : 1;
+                $alpha_v = ($v === 0) ? 1 / sqrt(2) : 1;
+                
+                // 二维DCT变换公式计算
+                for ($i = 0; $i < $m; $i++) {
+                    for ($j = 0; $j < $n; $j++) {
+                        $sum += $matrix[$i][$j] * 
+                                cos((2 * $i + 1) * $u * M_PI / (2 * $m)) * 
+                                cos((2 * $j + 1) * $v * M_PI / (2 * $n));
+                    }
+                }
+                
+                // 结果乘以系数
+                $result[$u][$v] = $alpha_u * $alpha_v * $sum * 2 / sqrt($m * $n);
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 对DCT系数矩阵进行逆变换(IDCT)，恢复原始图像数据
+     *
+     * @param array $dctMatrix DCT系数矩阵
+     * @return array 恢复的原始图像数据
+     */
+    public static function inverse(array $dctMatrix): array
+    {
+        $m = count($dctMatrix);
+        if ($m === 0) {
+            return [];
+        }
+        
+        $n = count($dctMatrix[0]);
+        $result = array_fill(0, $m, array_fill(0, $n, 0.0));
+        
+        // 二维IDCT变换实现
+        for ($i = 0; $i < $m; $i++) {
+            for ($j = 0; $j < $n; $j++) {
+                $sum = 0.0;
+                
+                for ($u = 0; $u < $m; $u++) {
+                    for ($v = 0; $v < $n; $v++) {
+                        // 计算α(u)和α(v)系数
+                        $alpha_u = ($u === 0) ? 1 / sqrt(2) : 1;
+                        $alpha_v = ($v === 0) ? 1 / sqrt(2) : 1;
+                        
+                        // 二维IDCT变换公式计算
+                        $sum += $alpha_u * $alpha_v * $dctMatrix[$u][$v] * 
+                                cos((2 * $i + 1) * $u * M_PI / (2 * $m)) * 
+                                cos((2 * $j + 1) * $v * M_PI / (2 * $n));
+                    }
+                }
+                
+                // 结果乘以系数
+                $result[$i][$j] = $sum * 2 / sqrt($m * $n);
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 对图像进行分块DCT变换
+     *
+     * @param array $imageData 图像数据
+     * @param int $blockSize 分块大小，默认为8x8
+     * @return array 分块DCT变换结果
+     */
+    public static function blockDCT(array $imageData, int $blockSize = 8): array
+    {
+        $height = count($imageData);
+        if ($height === 0) {
+            return [];
+        }
+        
+        $width = count($imageData[0]);
+        $result = [];
+        
+        // 计算需要的块数
+        $blocksY = ceil($height / $blockSize);
+        $blocksX = ceil($width / $blockSize);
+        
+        for ($by = 0; $by < $blocksY; $by++) {
+            $result[$by] = [];
+            for ($bx = 0; $bx < $blocksX; $bx++) {
+                // 提取当前块
+                $block = [];
+                for ($i = 0; $i < $blockSize; $i++) {
+                    $y = $by * $blockSize + $i;
+                    if ($y >= $height) {
+                        // 填充0
+                        $block[$i] = array_fill(0, $blockSize, 0);
+                        continue;
+                    }
+                    
+                    $block[$i] = [];
+                    for ($j = 0; $j < $blockSize; $j++) {
+                        $x = $bx * $blockSize + $j;
+                        $block[$i][$j] = ($x < $width) ? $imageData[$y][$x] : 0;
+                    }
+                }
+                
+                // 对当前块进行DCT变换
+                $result[$by][$bx] = self::forward($block);
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 对分块DCT系数进行逆变换，恢复图像
+     *
+     * @param array $dctBlocks 分块DCT系数
+     * @param int $height 原始图像高度
+     * @param int $width 原始图像宽度
+     * @param int $blockSize 分块大小
+     * @return array 恢复的图像数据
+     */
+    public static function blockIDCT(array $dctBlocks, int $height, int $width, int $blockSize = 8): array
+    {
+        $result = array_fill(0, $height, array_fill(0, $width, 0));
+        
+        $blocksY = count($dctBlocks);
+        if ($blocksY === 0) {
+            return $result;
+        }
+        
+        $blocksX = count($dctBlocks[0]);
+        
+        for ($by = 0; $by < $blocksY; $by++) {
+            for ($bx = 0; $bx < $blocksX; $bx++) {
+                // 对当前块进行IDCT变换
+                $block = self::inverse($dctBlocks[$by][$bx]);
+                
+                // 将恢复的块放回原始位置
+                for ($i = 0; $i < $blockSize; $i++) {
+                    $y = $by * $blockSize + $i;
+                    if ($y >= $height) {
+                        continue;
+                    }
+                    
+                    for ($j = 0; $j < $blockSize; $j++) {
+                        $x = $bx * $blockSize + $j;
+                        if ($x >= $width) {
+                            continue;
+                        }
+                        
+                        $result[$y][$x] = $block[$i][$j];
+                    }
+                }
+            }
+        }
+        
+        return $result;
+    }
+}
