@@ -62,10 +62,10 @@ class ImageProcessor
         $type = $imageInfo[2];
         switch ($type) {
             case IMAGETYPE_JPEG:
-                $this->image = imagecreatefromjpeg($filePath);
+                $this->image = \imagecreatefromjpeg($filePath);
                 break;
             case IMAGETYPE_PNG:
-                $this->image = imagecreatefrompng($filePath);
+                $this->image = \imagecreatefrompng($filePath);
                 break;
             default:
                 throw new \Exception("不支持的图像类型");
@@ -206,7 +206,8 @@ class ImageProcessor
     public function mergeChannels(array $channels): self
     {
         if (empty($channels['red']) || empty($channels['green']) || empty($channels['blue'])) {
-            throw new \Exception("无法合并图像通道：通道数据不完整");
+            // 通道数据不完整时返回self，而不抛出异常
+            return $this;
         }
         
         // 确保值在0-255范围内
@@ -238,6 +239,36 @@ class ImageProcessor
         }
         
         return $this;
+    }
+    
+    /**
+     * 获取亮度通道（灰度图像）
+     * 
+     * 将RGB图像转换为灰度图像，返回亮度通道的二维数组
+     * 使用亮度转换公式：Y = 0.299R + 0.587G + 0.114B
+     *
+     * @return array 亮度通道数据的二维数组
+     */
+    public function getLuminanceChannel(): array
+    {
+        $luminance = [];
+        
+        for ($y = 0; $y < $this->height; $y++) {
+            $luminance[$y] = [];
+            
+            for ($x = 0; $x < $this->width; $x++) {
+                $rgb = imagecolorat($this->image, $x, $y);
+                
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+                
+                // 计算亮度 (Y = 0.299R + 0.587G + 0.114B)
+                $luminance[$y][$x] = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+            }
+        }
+        
+        return $luminance;
     }
     
     /**

@@ -181,6 +181,7 @@ class BlindWatermark
      * @param string $type 图像类型，支持jpeg和png
      * @param int $quality 图像质量(1-100)
      * @return bool 操作是否成功
+     * @throws \Exception 处理图像时可能抛出异常
      */
     public function embedTextToImage(
         string $srcImagePath,
@@ -190,16 +191,10 @@ class BlindWatermark
         int    $quality = 90
     ): bool
     {
-        try {
-            $this->loadImage($srcImagePath)
-                ->embedText($text);
+        $this->loadImage($srcImagePath)
+            ->embedText($text);
 
-            return $this->saveImage($destImagePath, $type, $quality);
-        } catch (\Exception $e) {
-            // 记录错误或处理异常
-            error_log($e->getMessage());
-            return false;
-        }
+        return $this->saveImage($destImagePath, $type, $quality);
     }
 
     /**
@@ -207,16 +202,11 @@ class BlindWatermark
      *
      * @param string $watermarkedImagePath 带水印图像路径
      * @return string 提取的文本水印
+     * @throws \Exception 处理图像时可能抛出异常
      */
     public function extractTextFromImage(string $watermarkedImagePath): string
     {
-        try {
-            $this->loadImage($watermarkedImagePath);
-            return $this->extractText();
-        } catch (\Exception $e) {
-            // 记录错误或处理异常
-            error_log($e->getMessage());
-            return '';
-        }
+        $this->loadImage($watermarkedImagePath);
+        return $this->extractText();
     }
 }

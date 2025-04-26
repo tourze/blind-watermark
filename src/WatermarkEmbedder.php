@@ -2,12 +2,28 @@
 
 namespace Tourze\BlindWatermark;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Tourze\BlindWatermark\Utils\DCT;
 
 /**
  * 水印嵌入类
  *
- * 实现向图像中嵌入水印文本的功能
+ * 实现向图像中嵌入水印文本的功能。此类使用DCT（离散余弦变换）域水印嵌入技术，
+ * 将文本水印比特嵌入到图像特定频率位置，使水印隐蔽且具有一定的抗攻击能力。
+ * 
+ * 嵌入算法基本步骤:
+ * 1. 将文本转换为二进制比特流
+ * 2. 为比特流添加16位长度头部信息
+ * 3. 可选：使用密钥对比特流进行加密置乱
+ * 4. 对图像通道进行分块DCT变换
+ * 5. 根据水印比特值，修改DCT块中指定位置的系数值（正值表示1，负值表示0）
+ * 6. 对修改后的DCT块进行逆变换，得到嵌入水印的图像
+ * 
+ * 重要参数:
+ * - 分块大小：影响水印容量和质量，通常为8x8
+ * - 嵌入强度：影响水印的可见度和鲁棒性
+ * - 嵌入位置：DCT块中系数的位置，中频位置通常是最佳选择
  */
 class WatermarkEmbedder
 {
@@ -30,6 +46,31 @@ class WatermarkEmbedder
      * 加密密钥，用于保护水印信息
      */
     protected string $key = '';
+    
+    /**
+     * 日志记录器
+     */
+    protected LoggerInterface $logger;
+
+    /**
+     * 构造函数
+     */
+    public function __construct()
+    {
+        $this->logger = new NullLogger();
+    }
+
+    /**
+     * 设置日志记录器
+     *
+     * @param LoggerInterface $logger 日志记录器
+     * @return self
+     */
+    public function setLogger(LoggerInterface $logger): self
+    {
+        $this->logger = $logger;
+        return $this;
+    }
 
     /**
      * 设置DCT分块大小
@@ -80,6 +121,17 @@ class WatermarkEmbedder
     }
 
     /**
+     * 设置水印强度（setStrength的别名，保持向后兼容）
+     *
+     * @param float $alpha 强度值
+     * @return self
+     */
+    public function setAlpha(float $alpha): self
+    {
+        return $this->setStrength($alpha);
+    }
+
+    /**
      * 将文本转换为比特数组
      *
      * @param string $text 要转换的文本
@@ -112,40 +164,92 @@ class WatermarkEmbedder
             return $bits;
         }
 
+        // 生成随机种子
+        $seed = $this->generateSeedFromKey($this->key);
+        
+        // 生成映射表
+        $mappingTable = $this->generateMappingTable(count($bits), $seed);
+        
+        // 按照映射表重排比特
+        $encrypted = $this->applyMappingToData($bits, $mappingTable);
+        
+        // 调试：验证长度编码
+        $this->debugEncryptedLength($encrypted);
+
+        return $encrypted;
+    }
+    
+    /**
+     * 从密钥生成随机种子
+     *
+     * @param string $key 密钥
+     * @return int 随机种子
+     */
+    protected function generateSeedFromKey(string $key): int
+    {
+        return crc32($key);
+    }
+    
+    /**
+     * 生成随机映射表
+     *
+     * @param int $dataLength 数据长度
+     * @param int $seed 随机种子
+     * @return array 索引映射表
+     */
+    protected function generateMappingTable(int $dataLength, int $seed): array
+    {
         // 使用密钥生成随机种子
-        $seed = crc32($this->key);
         srand($seed);
 
         // 生成随机置乱索引
-        $count = count($bits);
-        $indices = range(0, $count - 1);
+        $indices = range(0, $dataLength - 1);
         shuffle($indices);
 
         // 创建映射表
         $mappingTable = [];
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $dataLength; $i++) {
             $mappingTable[$i] = $indices[$i];
         }
-
-        // 按照映射表重排比特
+        
+        // 恢复随机数生成器状态
+        srand();
+        
+        return $mappingTable;
+    }
+    
+    /**
+     * 应用映射表重排数据
+     *
+     * @param array $data 原始数据
+     * @param array $mappingTable 映射表
+     * @return array 重排后的数据
+     */
+    protected function applyMappingToData(array $data, array $mappingTable): array
+    {
         $encrypted = [];
-        for ($i = 0; $i < $count; $i++) {
-            $encrypted[$mappingTable[$i]] = $bits[$i];
+        for ($i = 0; $i < count($data); $i++) {
+            $encrypted[$mappingTable[$i]] = $data[$i];
         }
-
+        
+        return $encrypted;
+    }
+    
+    /**
+     * 调试加密后的长度编码
+     *
+     * @param array $encrypted 加密后的数据
+     */
+    protected function debugEncryptedLength(array $encrypted): void
+    {
         // 验证长度编码被正确加密
-        if ($count >= 16) {
+        if (count($encrypted) >= 16) {
             $lengthDebug = '';
             for ($i = 0; $i < 16; $i++) {
                 $lengthDebug .= $encrypted[$i];
             }
-            error_log("加密后的长度编码: " . $lengthDebug);
+            $this->logger->debug("加密后的长度编码: {$lengthDebug}");
         }
-
-        // 恢复随机数生成器状态
-        srand();
-
-        return $encrypted;
     }
 
     /**
@@ -188,8 +292,8 @@ class WatermarkEmbedder
             }
         }
 
-        // 输出调试信息
-        error_log("已嵌入 {$bitIndex} 比特的水印数据");
+        // 记录嵌入进度
+        $this->logger->debug("已嵌入 {$bitIndex} 比特的水印数据");
 
         // 进行逆DCT变换，得到嵌入水印后的图像通道
         $height = count($channel);
@@ -210,7 +314,7 @@ class WatermarkEmbedder
         $textBits = $this->textToBits($text);
         $bitLength = count($textBits);
         
-        error_log("文本长度: " . strlen($text) . " 字符, " . $bitLength . " 比特");
+        $this->logger->debug("文本长度: " . strlen($text) . " 字符, " . $bitLength . " 比特");
         
         // 使用16位表示长度（最多支持8192字符）
         $lengthBits = [];
@@ -218,12 +322,12 @@ class WatermarkEmbedder
             $lengthBits[] = ($bitLength >> $i) & 1;
         }
         
-        // 调试: 输出长度比特
+        // 记录长度编码信息
         $lengthDebug = '';
         foreach ($lengthBits as $bit) {
             $lengthDebug .= $bit;
         }
-        error_log("长度编码: " . $lengthDebug . " (" . bindec($lengthDebug) . ")");
+        $this->logger->debug("长度编码: " . $lengthDebug . " (" . bindec($lengthDebug) . ")");
         
         // 将长度信息和文本比特合并
         $allBits = array_merge($lengthBits, $textBits);

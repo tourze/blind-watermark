@@ -112,8 +112,8 @@ class BlindWatermarkTest extends TestCase
         $this->assertArrayHasKey('green', $channels);
         $this->assertArrayHasKey('blue', $channels);
 
-        $success = $processor->mergeChannels($channels);
-        $this->assertTrue($success);
+        $result = $processor->mergeChannels($channels);
+        $this->assertInstanceOf(ImageProcessor::class, $result);
 
         // 测试保存图像
         $savePath = $this->tempDir . '/saved_image.png';
