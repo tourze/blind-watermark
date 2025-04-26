@@ -157,14 +157,11 @@ class ImageProcessorTest extends TestCase
             // 缺少green和blue通道
         ];
 
-        // 由于实现被修改为返回自身而不是抛出异常，这里不再期待异常
+        // 期望当缺少通道时抛出异常
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("通道数据无效，必须包含red、green和blue三个通道");
+        
         $processor->mergeChannels($invalidChannels);
-
-        // 仍然应该能获取通道
-        $channels = $processor->splitChannels();
-        $this->assertArrayHasKey('red', $channels);
-        $this->assertArrayHasKey('green', $channels);
-        $this->assertArrayHasKey('blue', $channels);
     }
 
     /**
@@ -206,14 +203,10 @@ class ImageProcessorTest extends TestCase
         $processor = new ImageProcessor();
         // 不加载任何图像
 
-        // 分离通道应该返回空数组或者抛出异常
-        $channels = $processor->splitChannels();
-
-        $this->assertIsArray($channels);
-        // 由于没有图像，通道数组应该是空的或包含空通道
-        $this->assertArrayHasKey('red', $channels);
-        $this->assertArrayHasKey('green', $channels);
-        $this->assertArrayHasKey('blue', $channels);
-        $this->assertEmpty($channels['red']);
+        // 期望在没有图像时抛出异常
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("没有图像可以分割");
+        
+        $processor->splitChannels();
     }
 }

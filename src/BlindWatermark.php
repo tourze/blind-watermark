@@ -2,6 +2,9 @@
 
 namespace Tourze\BlindWatermark;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+
 /**
  * 盲水印主类
  *
@@ -38,14 +41,42 @@ class BlindWatermark
      * 水印嵌入位置
      */
     protected array $position = [3, 4];
+    
+    /**
+     * 是否启用几何变换修正功能
+     */
+    protected bool $geometricCorrectionEnabled = false;
+    
+    /**
+     * 是否启用对称性嵌入和提取
+     */
+    protected bool $symmetricEmbeddingEnabled = false;
+    
+    /**
+     * 是否启用多点嵌入和提取
+     */
+    protected bool $multiPointEmbeddingEnabled = false;
+    
+    /**
+     * 参考图像处理器（用于几何变换检测）
+     */
+    protected ?ImageProcessor $referenceImage = null;
+
+    /**
+     * 日志记录器
+     */
+    protected LoggerInterface $logger;
 
     /**
      * 构造函数
+     * 
+     * @param LoggerInterface|null $logger 可选的日志记录器
      */
-    public function __construct()
+    public function __construct(?LoggerInterface $logger = null)
     {
-        $this->embedder = new WatermarkEmbedder();
-        $this->extractor = new WatermarkExtractor();
+        $this->logger = $logger ?? new NullLogger();
+        $this->embedder = new WatermarkEmbedder($this->logger);
+        $this->extractor = new WatermarkExtractor($this->logger);
     }
 
     /**
@@ -88,6 +119,72 @@ class BlindWatermark
         $this->extractor->setPosition($position);
         return $this;
     }
+    
+    /**
+     * 启用对称性嵌入和提取功能（增强抗翻转攻击能力）
+     * 
+     * 此功能可以使水印对图像的翻转和旋转操作具有一定的鲁棒性
+     *
+     * @param bool $enabled 是否启用
+     * @return self
+     */
+    public function enableSymmetricEmbedding(bool $enabled = true): self
+    {
+        $this->symmetricEmbeddingEnabled = $enabled;
+        $this->embedder->setSymmetricEmbedding($enabled);
+        $this->extractor->setSymmetricExtraction($enabled);
+        return $this;
+    }
+    
+    /**
+     * 启用多点嵌入和提取功能（增强水印鲁棒性）
+     * 
+     * 此功能可以通过在多个位置同时嵌入相同的水印比特，提高水印对图像处理操作的鲁棒性
+     *
+     * @param bool $enabled 是否启用
+     * @return self
+     */
+    public function enableMultiPointEmbedding(bool $enabled = true): self
+    {
+        $this->multiPointEmbeddingEnabled = $enabled;
+        $this->embedder->setMultiPointEmbedding($enabled);
+        $this->extractor->setMultiPointExtraction($enabled);
+        return $this;
+    }
+    
+    /**
+     * 启用几何变换修正功能
+     * 
+     * 此功能可以检测和修正图像的几何变换（如翻转、旋转等），提高水印提取的成功率
+     *
+     * @param bool $enabled 是否启用
+     * @return self
+     */
+    public function enableGeometricCorrection(bool $enabled = true): self
+    {
+        $this->geometricCorrectionEnabled = $enabled;
+        $this->extractor->setGeometricCorrection($enabled);
+        return $this;
+    }
+    
+    /**
+     * 保存嵌入水印后的图像作为参考图像
+     * 
+     * 参考图像用于几何变换的检测和修正，通过比较原始水印图像和变换后的图像，
+     * 可以检测出图像经历了哪些几何变换
+     *
+     * @return self
+     */
+    public function saveAsReference(): self
+    {
+        if ($this->imageProcessor !== null) {
+            $this->referenceImage = clone $this->imageProcessor;
+            // 将参考图像的蓝色通道传递给提取器
+            $channels = $this->referenceImage->splitChannels();
+            $this->extractor->setReferenceChannel($channels['blue']);
+        }
+        return $this;
+    }
 
     /**
      * 从文件加载图像
@@ -98,7 +195,7 @@ class BlindWatermark
      */
     public function loadImage(string $filePath): self
     {
-        $this->imageProcessor = new ImageProcessor();
+        $this->imageProcessor = new ImageProcessor($this->logger);
         $this->imageProcessor->loadFromFile($filePath);
         return $this;
     }
@@ -174,6 +271,11 @@ class BlindWatermark
     {
         $this->loadImage($srcImagePath)
             ->embedText($text);
+            
+        // 如果启用了几何修正，保存为参考图像
+        if ($this->geometricCorrectionEnabled) {
+            $this->saveAsReference();
+        }
 
         return $this->saveImage($destImagePath, $type, $quality);
     }
@@ -189,5 +291,194 @@ class BlindWatermark
     {
         $this->loadImage($watermarkedImagePath);
         return $this->extractText();
+    }
+    
+    /**
+     * 对图像进行水平翻转（用于测试水印的抗翻转能力）
+     *
+     * @return self
+     * @throws \Exception 图像未加载时抛出异常
+     */
+    public function flipHorizontal(): self
+    {
+        if ($this->imageProcessor === null) {
+            throw new \Exception("请先加载图像");
+        }
+        
+        $channels = $this->imageProcessor->splitChannels();
+        
+        // 对所有通道进行水平翻转
+        foreach ($channels as $channel => $data) {
+            $channels[$channel] = $this->flipImageChannel($data, true, false);
+        }
+        
+        // 合并通道
+        $this->imageProcessor->mergeChannels($channels);
+        
+        return $this;
+    }
+    
+    /**
+     * 对图像进行垂直翻转（用于测试水印的抗翻转能力）
+     *
+     * @return self
+     * @throws \Exception 图像未加载时抛出异常
+     */
+    public function flipVertical(): self
+    {
+        if ($this->imageProcessor === null) {
+            throw new \Exception("请先加载图像");
+        }
+        
+        $channels = $this->imageProcessor->splitChannels();
+        
+        // 对所有通道进行垂直翻转
+        foreach ($channels as $channel => $data) {
+            $channels[$channel] = $this->flipImageChannel($data, false, true);
+        }
+        
+        // 合并通道
+        $this->imageProcessor->mergeChannels($channels);
+        
+        return $this;
+    }
+    
+    /**
+     * 对图像进行旋转（用于测试水印的抗旋转能力，当前仅支持90度的倍数）
+     *
+     * @param int $angle 旋转角度 (90, 180, 270)
+     * @return self
+     * @throws \Exception 图像未加载时抛出异常
+     */
+    public function rotate(int $angle): self
+    {
+        if ($this->imageProcessor === null) {
+            throw new \Exception("请先加载图像");
+        }
+        
+        if ($angle % 90 !== 0) {
+            throw new \Exception("当前仅支持90度的倍数进行旋转");
+        }
+        
+        $angle = $angle % 360;
+        if ($angle === 0) {
+            return $this; // 无需旋转
+        }
+        
+        $channels = $this->imageProcessor->splitChannels();
+        $width = $this->imageProcessor->getWidth();
+        $height = $this->imageProcessor->getHeight();
+        
+        // 对所有通道进行旋转
+        foreach ($channels as $channel => $data) {
+            $channels[$channel] = $this->rotateImageChannel($data, $angle);
+        }
+        
+        // 如果是90度或270度旋转，需要创建新的图像（因为宽高会交换）
+        if ($angle === 90 || $angle === 270) {
+            $newImage = new ImageProcessor();
+            $newImage->createImage($height, $width);
+            $newImage->mergeChannels($channels);
+            $this->imageProcessor = $newImage;
+        } else {
+            // 180度旋转不改变尺寸
+            $this->imageProcessor->mergeChannels($channels);
+        }
+        
+        return $this;
+    }
+    
+    /**
+     * 翻转图像通道
+     *
+     * @param array $channel 图像通道数据
+     * @param bool $horizontal 是否水平翻转
+     * @param bool $vertical 是否垂直翻转
+     * @return array 翻转后的通道数据
+     */
+    protected function flipImageChannel(array $channel, bool $horizontal, bool $vertical): array
+    {
+        $height = count($channel);
+        if ($height === 0) {
+            return [];
+        }
+        
+        $width = count($channel[0]);
+        if ($width === 0) {
+            return [];
+        }
+        
+        $flipped = [];
+        
+        for ($y = 0; $y < $height; $y++) {
+            $srcY = $vertical ? ($height - 1 - $y) : $y;
+            $flipped[$y] = [];
+            
+            for ($x = 0; $x < $width; $x++) {
+                $srcX = $horizontal ? ($width - 1 - $x) : $x;
+                $flipped[$y][$x] = $channel[$srcY][$srcX];
+            }
+        }
+        
+        return $flipped;
+    }
+    
+    /**
+     * 旋转图像通道
+     *
+     * @param array $channel 图像通道数据
+     * @param int $angle 旋转角度 (90, 180, 270)
+     * @return array 旋转后的通道数据
+     */
+    protected function rotateImageChannel(array $channel, int $angle): array
+    {
+        $height = count($channel);
+        if ($height === 0) {
+            return [];
+        }
+        
+        $width = count($channel[0]);
+        if ($width === 0) {
+            return [];
+        }
+        
+        $rotated = [];
+        
+        switch ($angle) {
+            case 90:
+                // 90度旋转 (顺时针)
+                for ($y = 0; $y < $width; $y++) {
+                    $rotated[$y] = [];
+                    for ($x = 0; $x < $height; $x++) {
+                        $rotated[$y][$x] = $channel[$height - 1 - $x][$y];
+                    }
+                }
+                break;
+                
+            case 180:
+                // 180度旋转
+                for ($y = 0; $y < $height; $y++) {
+                    $rotated[$y] = [];
+                    for ($x = 0; $x < $width; $x++) {
+                        $rotated[$y][$x] = $channel[$height - 1 - $y][$width - 1 - $x];
+                    }
+                }
+                break;
+                
+            case 270:
+                // 270度旋转 (逆时针)
+                for ($y = 0; $y < $width; $y++) {
+                    $rotated[$y] = [];
+                    for ($x = 0; $x < $height; $x++) {
+                        $rotated[$y][$x] = $channel[$x][$width - 1 - $y];
+                    }
+                }
+                break;
+                
+            default:
+                return $channel; // 不支持的角度，返回原始通道
+        }
+        
+        return $rotated;
     }
 }
