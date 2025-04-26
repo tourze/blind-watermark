@@ -40,11 +40,6 @@ class BlindWatermark
     protected array $position = [3, 4];
 
     /**
-     * 加密密钥
-     */
-    protected string $key = '';
-
-    /**
      * 构造函数
      */
     public function __construct()
@@ -91,20 +86,6 @@ class BlindWatermark
         $this->position = $position;
         $this->embedder->setPosition($position);
         $this->extractor->setPosition($position);
-        return $this;
-    }
-
-    /**
-     * 设置加密密钥
-     *
-     * @param string $key 密钥
-     * @return self
-     */
-    public function setKey(string $key): self
-    {
-        $this->key = $key;
-        $this->embedder->setKey($key);
-        $this->extractor->setKey($key);
         return $this;
     }
 

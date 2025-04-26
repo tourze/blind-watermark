@@ -64,8 +64,7 @@ class WatermarkEmbedderTest extends TestCase
         // 测试链式调用
         $result = $embedder->setBlockSize(16)
             ->setAlpha(30.0)
-            ->setPosition([5, 6])
-            ->setKey('test_key');
+            ->setPosition([5, 6]);
 
         $this->assertInstanceOf(WatermarkEmbedder::class, $result);
     }
@@ -153,26 +152,6 @@ class WatermarkEmbedderTest extends TestCase
 
             $this->assertFileExists($outputPath);
         }
-    }
-
-    /**
-     * 测试使用密钥嵌入
-     */
-    public function testEmbedWithKey(): void
-    {
-        $text = 'Secret Watermark';
-        $processor = new ImageProcessor();
-        $processor->loadFromFile($this->testImagePath);
-
-        // 使用密钥
-        $embedder = new WatermarkEmbedder();
-        $embedder->setKey('my_secret_key');
-
-        $embeddedImage = $embedder->embed($processor, $text);
-        $outputPath = $this->tempDir . '/keyed_watermark.png';
-        $embeddedImage->saveToFile($outputPath, ImageProcessor::IMAGE_TYPE_PNG);
-
-        $this->assertFileExists($outputPath);
     }
 
     /**

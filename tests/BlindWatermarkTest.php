@@ -153,32 +153,6 @@ class BlindWatermarkTest extends TestCase
     }
 
     /**
-     * 测试带密钥的水印嵌入和提取
-     *
-     * 注：由于算法限制，目前密钥功能尚未完全实现，此测试仅验证基本的嵌入功能
-     */
-    public function testWatermarkWithKey(): void
-    {
-        $key = "my_secret_key";
-        $watermark = new BlindWatermark();
-        $watermark->setKey($key);
-
-        // 嵌入水印
-        $result = $watermark->embedTextToImage(
-            $this->testImagePath,
-            $this->watermarkText,
-            $this->outputImagePath,
-            ImageProcessor::IMAGE_TYPE_PNG
-        );
-
-        $this->assertTrue($result);
-        $this->assertFileExists($this->outputImagePath);
-
-        // 注：暂时跳过密钥验证，待算法完善后再进行测试
-        $this->markTestIncomplete('密钥提取功能尚未完全实现，待完善');
-    }
-
-    /**
      * 测试使用不同图像的水印嵌入和提取
      */
     public function testWatermarkWithDifferentImages(): void

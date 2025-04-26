@@ -159,7 +159,7 @@ class ImageProcessorTest extends TestCase
 
         // 由于实现被修改为返回自身而不是抛出异常，这里不再期待异常
         $processor->mergeChannels($invalidChannels);
-        
+
         // 仍然应该能获取通道
         $channels = $processor->splitChannels();
         $this->assertArrayHasKey('red', $channels);

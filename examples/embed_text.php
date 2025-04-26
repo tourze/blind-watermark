@@ -6,14 +6,13 @@ use Tourze\BlindWatermark\BlindWatermark;
 
 // 检查参数
 if ($argc < 4) {
-    echo "用法: php embed_text.php <原始图像路径> <水印文本> <输出图像路径> [密钥]\n";
+    echo "用法: php embed_text.php <原始图像路径> <水印文本> <输出图像路径>\n";
     exit(1);
 }
 
 $srcImagePath = $argv[1];
 $watermarkText = $argv[2];
 $destImagePath = $argv[3];
-$key = $argc > 4 ? $argv[4] : '';
 
 // 验证源文件存在
 if (!file_exists($srcImagePath)) {
@@ -31,13 +30,9 @@ $imageType = strtolower($type) === 'png' ? 'png' : 'jpeg';
 try {
     // 设置参数并嵌入水印
     $watermark->setAlpha(90.0); // 设置更高的水印强度，确保水印能被提取
-    
-    if (!empty($key)) {
-        $watermark->setKey($key); // 设置加密密钥
-    }
-    
+
     echo "正在嵌入水印文本: \"{$watermarkText}\"...\n";
-    
+
     // 嵌入水印并保存
     $success = $watermark->embedTextToImage(
         $srcImagePath,
@@ -45,7 +40,7 @@ try {
         $destImagePath,
         $imageType
     );
-    
+
     if ($success) {
         echo "成功: 水印已嵌入并保存到 {$destImagePath}\n";
     } else {
