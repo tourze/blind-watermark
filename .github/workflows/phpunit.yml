@@ -21,4 +21,4 @@ jobs:
       - name: Install Dependencies
         run: composer update --prefer-dist --no-interaction --no-suggest --prefer-${{ matrix.perfer }}
       - name: Run PHPUnit
-        run: ./vendor/bin/phpunit tests
+        run: XDEBUG_MODE=off ./vendor/bin/phpunit tests
