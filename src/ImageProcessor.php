@@ -201,12 +201,12 @@ class ImageProcessor
      * 合并图像通道
      *
      * @param array $channels 包含RGB三个通道的数组
-     * @return bool 合并是否成功
+     * @return self 用于链式调用
      */
-    public function mergeChannels(array $channels): bool
+    public function mergeChannels(array $channels): self
     {
         if (empty($channels['red']) || empty($channels['green']) || empty($channels['blue'])) {
-            return false;
+            throw new \Exception("无法合并图像通道：通道数据不完整");
         }
         
         // 确保值在0-255范围内
@@ -237,7 +237,7 @@ class ImageProcessor
             }
         }
         
-        return true;
+        return $this;
     }
     
     /**

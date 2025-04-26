@@ -190,4 +190,30 @@ class DCT
         
         return $result;
     }
+    
+    /**
+     * 对分块DCT系数进行逆变换，恢复图像
+     * 
+     * 与blockIDCT功能相同，提供兼容性支持
+     *
+     * @param array $dctBlocks 分块DCT系数
+     * @param int $blockSize 分块大小
+     * @return array 恢复的图像数据
+     */
+    public static function inverseBlockDCT(array $dctBlocks, int $blockSize = 8): array
+    {
+        $blocksY = count($dctBlocks);
+        if ($blocksY === 0) {
+            return [];
+        }
+        
+        $blocksX = count($dctBlocks[0]);
+        
+        // 计算原始图像尺寸
+        $height = $blocksY * $blockSize;
+        $width = $blocksX * $blockSize;
+        
+        // 调用blockIDCT实现功能
+        return self::blockIDCT($dctBlocks, $height, $width, $blockSize);
+    }
 }

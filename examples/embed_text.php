@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Tourze\BlindWatermark\BlindWatermark;
 
@@ -30,11 +30,13 @@ $imageType = strtolower($type) === 'png' ? 'png' : 'jpeg';
 
 try {
     // 设置参数并嵌入水印
-    $watermark->setAlpha(25.0); // 设置水印强度
+    $watermark->setAlpha(90.0); // 设置更高的水印强度，确保水印能被提取
     
     if (!empty($key)) {
         $watermark->setKey($key); // 设置加密密钥
     }
+    
+    echo "正在嵌入水印文本: \"{$watermarkText}\"...\n";
     
     // 嵌入水印并保存
     $success = $watermark->embedTextToImage(

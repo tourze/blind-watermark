@@ -123,10 +123,25 @@ class WatermarkExtractor
         $indices = range(0, $count - 1);
         shuffle($indices);
 
+        // 创建映射表
+        $mappingTable = [];
+        for ($i = 0; $i < $count; $i++) {
+            $mappingTable[$i] = $indices[$i];
+        }
+
         // 反向映射还原原始比特
         $decrypted = array_fill(0, $count, 0);
-        foreach ($indices as $i => $pos) {
-            $decrypted[$i] = $encryptedBits[$pos];
+        for ($i = 0; $i < $count; $i++) {
+            $decrypted[$i] = $encryptedBits[$mappingTable[$i]];
+        }
+
+        // 验证长度编码被正确解密
+        if ($count >= 16) {
+            $lengthDebug = '';
+            for ($i = 0; $i < 16; $i++) {
+                $lengthDebug .= $decrypted[$i];
+            }
+            error_log("解密后的长度编码: " . $lengthDebug);
         }
 
         // 恢复随机数生成器状态
@@ -169,35 +184,60 @@ class WatermarkExtractor
         // 分离图像通道
         $channels = $image->splitChannels();
 
-        // 首先提取32位长度信息
-        $lengthBits = $this->extractWatermarkFromChannel($channels['blue'], 32);
-
-        // 如果使用了密钥，先解密长度信息
-        if (!empty($this->key)) {
-            $lengthBits = $this->decryptBits($lengthBits);
+        // 先提取足够的比特用于获取水印长度
+        $initialBitsToExtract = 256; // 至少包含16位长度信息和一些水印数据
+        $encryptedBits = $this->extractWatermarkFromChannel($channels['blue'], $initialBitsToExtract);
+        
+        error_log("初始提取比特数: " . count($encryptedBits));
+        
+        // 解密提取的比特
+        $decryptedBits = !empty($this->key) ? $this->decryptBits($encryptedBits) : $encryptedBits;
+        
+        // 从解密后的比特中提取长度信息（前16位）
+        if (count($decryptedBits) < 16) {
+            error_log("提取的比特不足16位，无法读取长度信息");
+            return '';
         }
-
-        // 计算水印长度
-        $watermarkLength = 0;
+        
+        $lengthBits = array_slice($decryptedBits, 0, 16);
+        
+        // 调试: 输出长度比特
+        $lengthDebug = '';
         foreach ($lengthBits as $bit) {
-            $watermarkLength = ($watermarkLength << 1) | $bit;
+            $lengthDebug .= $bit;
         }
+        
+        // 计算水印长度
+        $watermarkLength = bindec($lengthDebug);
+        error_log("解析的水印长度: " . $lengthDebug . " (" . $watermarkLength . " 比特)");
 
         // 检查水印长度是否合理
-        if ($watermarkLength <= 0 || $watermarkLength > 100000) {
-            return ''; // 长度不合理，可能提取失败
+        if ($watermarkLength <= 0 || $watermarkLength > 8192) {
+            error_log("水印长度不合理: {$watermarkLength}");
+            return '';
         }
 
-        // 提取完整水印(长度信息 + 实际水印)
-        $totalBits = $this->extractWatermarkFromChannel($channels['blue'], 32 + $watermarkLength);
+        // 如果需要更多比特，继续提取
+        $totalBitsNeeded = 16 + $watermarkLength;
+        if ($totalBitsNeeded > count($decryptedBits)) {
+            error_log("需要提取更多比特: {$totalBitsNeeded}");
+            $encryptedBits = $this->extractWatermarkFromChannel($channels['blue'], $totalBitsNeeded);
+            $decryptedBits = !empty($this->key) ? $this->decryptBits($encryptedBits) : $encryptedBits;
+        }
+        
+        // 再次检查是否有足够的比特
+        if (count($decryptedBits) < 16 + $watermarkLength) {
+            error_log("无法提取足够的比特: 需要 " . (16 + $watermarkLength) . ", 实际 " . count($decryptedBits));
+            return '';
+        }
 
-        // 解密水印比特
-        $decryptedBits = $this->decryptBits($totalBits);
-
-        // 跳过长度信息，只使用实际水印比特
-        $watermarkBits = array_slice($decryptedBits, 32, $watermarkLength);
-
+        // 提取水印比特（跳过长度信息）
+        $watermarkBits = array_slice($decryptedBits, 16, $watermarkLength);
+        
         // 将比特转换为文本
-        return $this->bitsToText($watermarkBits);
+        $text = $this->bitsToText($watermarkBits);
+        error_log("提取的文本: " . $text);
+        
+        return $text;
     }
 }

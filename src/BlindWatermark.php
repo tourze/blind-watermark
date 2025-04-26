@@ -32,7 +32,7 @@ class BlindWatermark
     /**
      * 水印嵌入强度
      */
-    protected float $alpha = 20.0;
+    protected float $alpha = 36.0;
 
     /**
      * 水印嵌入位置
@@ -76,7 +76,7 @@ class BlindWatermark
     public function setAlpha(float $alpha): self
     {
         $this->alpha = $alpha;
-        $this->embedder->setAlpha($alpha);
+        $this->embedder->setStrength($alpha);
         return $this;
     }
 

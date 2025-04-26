@@ -7,7 +7,7 @@ use Tourze\BlindWatermark\Utils\DCT;
 /**
  * 水印嵌入类
  *
- * 实现将文本水印嵌入到图像中的功能
+ * 实现向图像中嵌入水印文本的功能
  */
 class WatermarkEmbedder
 {
@@ -17,17 +17,17 @@ class WatermarkEmbedder
     protected int $blockSize = 8;
 
     /**
-     * 水印嵌入强度，数值越大水印越明显，但图像质量下降
+     * 水印强度参数，决定水印的可见度和鲁棒性
      */
-    protected float $alpha = 20.0;
+    protected float $strength = 36.0;
 
     /**
-     * 水印位置选择参数，默认选择中低频段
+     * 水印嵌入位置参数
      */
     protected array $position = [3, 4];
 
     /**
-     * 加密密钥，用于置乱水印信息
+     * 加密密钥，用于保护水印信息
      */
     protected string $key = '';
 
@@ -46,12 +46,12 @@ class WatermarkEmbedder
     /**
      * 设置水印强度
      *
-     * @param float $alpha 水印强度系数
+     * @param float $strength 强度值
      * @return self
      */
-    public function setAlpha(float $alpha): self
+    public function setStrength(float $strength): self
     {
-        $this->alpha = $alpha;
+        $this->strength = $strength;
         return $this;
     }
 
@@ -82,20 +82,18 @@ class WatermarkEmbedder
     /**
      * 将文本转换为比特数组
      *
-     * @param string $text 要嵌入的文本
-     * @return array 比特数组
+     * @param string $text 要转换的文本
+     * @return array 转换后的比特数组
      */
     protected function textToBits(string $text): array
     {
         $bits = [];
+        $length = strlen($text);
 
-        // 转换字符串为二进制，并获取比特
-        for ($i = 0; $i < strlen($text); $i++) {
-            $char = ord($text[$i]);
-
-            // 每个字符转为8位二进制
+        for ($i = 0; $i < $length; $i++) {
+            $byte = ord($text[$i]);
             for ($j = 7; $j >= 0; $j--) {
-                $bits[] = ($char >> $j) & 1;
+                $bits[] = ($byte >> $j) & 1;
             }
         }
 
@@ -114,18 +112,34 @@ class WatermarkEmbedder
             return $bits;
         }
 
-        // 使用密钥生成伪随机序列
+        // 使用密钥生成随机种子
         $seed = crc32($this->key);
         srand($seed);
 
-        // 简单的随机置乱算法
+        // 生成随机置乱索引
         $count = count($bits);
         $indices = range(0, $count - 1);
         shuffle($indices);
 
-        $encrypted = array_fill(0, $count, 0);
-        foreach ($bits as $i => $bit) {
-            $encrypted[$indices[$i]] = $bit;
+        // 创建映射表
+        $mappingTable = [];
+        for ($i = 0; $i < $count; $i++) {
+            $mappingTable[$i] = $indices[$i];
+        }
+
+        // 按照映射表重排比特
+        $encrypted = [];
+        for ($i = 0; $i < $count; $i++) {
+            $encrypted[$mappingTable[$i]] = $bits[$i];
+        }
+
+        // 验证长度编码被正确加密
+        if ($count >= 16) {
+            $lengthDebug = '';
+            for ($i = 0; $i < 16; $i++) {
+                $lengthDebug .= $encrypted[$i];
+            }
+            error_log("加密后的长度编码: " . $lengthDebug);
         }
 
         // 恢复随机数生成器状态
@@ -135,90 +149,95 @@ class WatermarkEmbedder
     }
 
     /**
-     * 将水印嵌入到图像通道中
+     * 向图像通道嵌入水印比特
      *
      * @param array $channel 图像通道数据
-     * @param array $watermarkBits 水印比特数组
+     * @param array $bits 水印比特数组
      * @return array 嵌入水印后的通道数据
      */
-    protected function embedWatermarkInChannel(array $channel, array $watermarkBits): array
+    protected function embedWatermarkInChannel(array $channel, array $bits): array
     {
         // 对图像数据进行分块DCT变换
         $dctBlocks = DCT::blockDCT($channel, $this->blockSize);
 
-        $height = count($channel);
-        $width = count($channel[0]);
-
-        // 计算可嵌入的块数量
+        // 计算可用于嵌入的块数量
         $blocksY = count($dctBlocks);
         $blocksX = count($dctBlocks[0]);
         $totalBlocks = $blocksX * $blocksY;
 
-        // 确保水印比特数量不超过可嵌入的块数量
-        $bitsCount = count($watermarkBits);
-        if ($bitsCount > $totalBlocks) {
-            $watermarkBits = array_slice($watermarkBits, 0, $totalBlocks);
-            $bitsCount = $totalBlocks;
-        }
+        // 确保水印比特数量不超过可用块数
+        $bitsToEmbed = min(count($bits), $totalBlocks);
 
         // 嵌入水印比特
         $bitIndex = 0;
-        for ($by = 0; $by < $blocksY && $bitIndex < $bitsCount; $by++) {
-            for ($bx = 0; $bx < $blocksX && $bitIndex < $bitsCount; $bx++) {
-                $bit = $watermarkBits[$bitIndex++];
 
-                // 获取指定位置的DCT系数
+        for ($by = 0; $by < $blocksY && $bitIndex < $bitsToEmbed; $by++) {
+            for ($bx = 0; $bx < $blocksX && $bitIndex < $bitsToEmbed; $bx++) {
+                // 设置指定位置的DCT系数
                 $row = $this->position[0];
                 $col = $this->position[1];
 
-                // 根据比特值修改DCT系数
-                if ($bit == 1) {
-                    $dctBlocks[$by][$bx][$row][$col] += $this->alpha;
+                // 强制改变DCT系数
+                if ($bits[$bitIndex] == 1) {
+                    $dctBlocks[$by][$bx][$row][$col] = $this->strength;
                 } else {
-                    $dctBlocks[$by][$bx][$row][$col] -= $this->alpha;
+                    $dctBlocks[$by][$bx][$row][$col] = -$this->strength;
                 }
+
+                $bitIndex++;
             }
         }
 
-        // 进行逆DCT变换，恢复图像数据
+        // 输出调试信息
+        error_log("已嵌入 {$bitIndex} 比特的水印数据");
+
+        // 进行逆DCT变换，得到嵌入水印后的图像通道
+        $height = count($channel);
+        $width = count($channel[0]);
         return DCT::blockIDCT($dctBlocks, $height, $width, $this->blockSize);
     }
 
     /**
-     * 将文本水印嵌入到图像中
+     * 向图像中嵌入文本水印
      *
-     * @param ImageProcessor $image 原始图像处理器
-     * @param string $text 要嵌入的文本水印
+     * @param ImageProcessor $image 图像处理器
+     * @param string $text 要嵌入的文本
      * @return ImageProcessor 嵌入水印后的图像处理器
      */
     public function embed(ImageProcessor $image, string $text): ImageProcessor
     {
+        // 将文本转换为比特数组
+        $textBits = $this->textToBits($text);
+        $bitLength = count($textBits);
+        
+        error_log("文本长度: " . strlen($text) . " 字符, " . $bitLength . " 比特");
+        
+        // 使用16位表示长度（最多支持8192字符）
+        $lengthBits = [];
+        for ($i = 15; $i >= 0; $i--) {
+            $lengthBits[] = ($bitLength >> $i) & 1;
+        }
+        
+        // 调试: 输出长度比特
+        $lengthDebug = '';
+        foreach ($lengthBits as $bit) {
+            $lengthDebug .= $bit;
+        }
+        error_log("长度编码: " . $lengthDebug . " (" . bindec($lengthDebug) . ")");
+        
+        // 将长度信息和文本比特合并
+        $allBits = array_merge($lengthBits, $textBits);
+        
+        // 加密比特
+        $encryptedBits = !empty($this->key) ? $this->encryptBits($allBits) : $allBits;
+        
         // 分离图像通道
         $channels = $image->splitChannels();
-
-        // 将文本转换为比特数组
-        $bits = $this->textToBits($text);
-
-        // 记录水印长度，便于提取时使用
-        $watermarkLength = count($bits);
-        $lengthBits = [];
-        for ($i = 31; $i >= 0; $i--) {
-            $lengthBits[] = ($watermarkLength >> $i) & 1;
-        }
-
-        // 合并长度信息和水印比特
-        $allBits = array_merge($lengthBits, $bits);
-
-        // 使用密钥加密比特
-        $encryptedBits = $this->encryptBits($allBits);
-
-        // 只在蓝色通道嵌入水印，保持其他通道不变
-        // 可根据实际需求修改为多通道嵌入
+        
+        // 仅在蓝色通道嵌入水印（对人眼最不敏感）
         $channels['blue'] = $this->embedWatermarkInChannel($channels['blue'], $encryptedBits);
-
-        // 合并通道
-        $image->mergeChannels($channels);
-
-        return $image;
+        
+        // 合并通道，返回嵌入水印后的图像
+        return $image->mergeChannels($channels);
     }
 }
