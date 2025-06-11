@@ -36,25 +36,6 @@ class WatermarkEmbedderTest extends TestCase
     }
 
     /**
-     * 测试后的清理工作
-     */
-    protected function tearDown(): void
-    {
-        // 删除临时目录
-        if (is_dir($this->tempDir)) {
-            $files = glob($this->tempDir . '/*');
-            foreach ($files as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
-            }
-            rmdir($this->tempDir);
-        }
-
-        parent::tearDown();
-    }
-
-    /**
      * 测试嵌入器的基本属性设置
      */
     public function testSetProperties(): void

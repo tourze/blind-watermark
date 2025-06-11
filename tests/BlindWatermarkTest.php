@@ -50,24 +50,6 @@ class BlindWatermarkTest extends TestCase
     }
 
     /**
-     * 测试后的清理工作
-     */
-    protected function tearDown(): void
-    {
-        // 删除临时文件
-        if (file_exists($this->outputImagePath)) {
-            unlink($this->outputImagePath);
-        }
-
-        // 删除临时目录
-        if (is_dir($this->tempDir)) {
-            rmdir($this->tempDir);
-        }
-
-        parent::tearDown();
-    }
-
-    /**
      * 测试DCT正变换和逆变换
      */
     public function testDCTTransform(): void
