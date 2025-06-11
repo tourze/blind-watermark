@@ -335,7 +335,7 @@ class WatermarkEmbedder
             $height = count($channel);
             $width = count($channel[0]);
             return DCT::blockIDCT($dctBlocks, $height, $width, $this->blockSize);
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error("嵌入水印时发生错误: " . $e->getMessage(), ['exception' => $e]);
             throw $e;
         }
@@ -386,7 +386,7 @@ class WatermarkEmbedder
             $this->logger->info("水印嵌入完成");
             
             return $image;
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error("嵌入水印过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
             throw $e;
         }

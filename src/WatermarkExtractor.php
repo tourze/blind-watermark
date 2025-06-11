@@ -258,7 +258,7 @@ class WatermarkExtractor
                     $rotationAngle
                 );
             }
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error("几何变换检测过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
         }
         
@@ -376,7 +376,7 @@ class WatermarkExtractor
             
             $this->logger->debug("实际提取比特数: " . count($bits));
             return $bits;
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error("提取水印比特过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
             return [];
         }
@@ -406,7 +406,7 @@ class WatermarkExtractor
             
             $this->logger->debug("转换完成，文本长度: " . strlen($text) . " 字符");
             return $text;
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error("比特转文本过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
             return '';
         }
@@ -471,7 +471,7 @@ class WatermarkExtractor
             $this->logger->info("水印提取完成，文本长度: " . strlen($text) . " 字符");
             
             return $text;
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error("提取水印过程中发生异常: " . $e->getMessage(), ['exception' => $e]);
             return '';
         }
