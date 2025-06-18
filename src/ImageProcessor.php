@@ -195,7 +195,7 @@ class ImageProcessor
     /**
      * 将图像分割为RGB三个通道
      * 
-     * @return array 包含三个通道的二维数组，键名为'red', 'green', 'blue'
+     * @return array<string, array<int, array<int, int>>> 包含三个通道的二维数组，键名为'red', 'green', 'blue'
      * @throws \Exception 图像未加载时抛出异常
      */
     public function splitChannels(): array
@@ -245,7 +245,7 @@ class ImageProcessor
     /**
      * 将RGB三个通道合并为一个图像
      * 
-     * @param array $channels 包含三个通道的二维数组，键名为'red', 'green', 'blue'
+     * @param array<string, array<int, array<int, int>>> $channels 包含三个通道的二维数组，键名为'red', 'green', 'blue'
      * @return self 图像处理器实例，支持链式调用
      * @throws \Exception 图像未加载或通道数据无效时抛出异常
      */
@@ -291,7 +291,7 @@ class ImageProcessor
      * 将RGB图像转换为灰度图像，返回亮度通道的二维数组
      * 使用亮度转换公式：Y = 0.299R + 0.587G + 0.114B
      *
-     * @return array 亮度通道数据的二维数组
+     * @return array<int, array<int, float>> 亮度通道数据的二维数组
      */
     public function getLuminanceChannel(): array
     {

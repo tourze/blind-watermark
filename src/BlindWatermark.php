@@ -39,6 +39,8 @@ class BlindWatermark
 
     /**
      * 水印嵌入位置
+     * 
+     * @var array<int>
      */
     protected array $position = [3, 4];
     
@@ -109,7 +111,7 @@ class BlindWatermark
     /**
      * 设置水印嵌入位置
      *
-     * @param array $position 位置数组 [row, col]
+     * @param array<int> $position 位置数组 [row, col]
      * @return self
      */
     public function setPosition(array $position): self
@@ -391,10 +393,10 @@ class BlindWatermark
     /**
      * 翻转图像通道
      *
-     * @param array $channel 图像通道数据
+     * @param array<int, array<int, int>> $channel 图像通道数据
      * @param bool $horizontal 是否水平翻转
      * @param bool $vertical 是否垂直翻转
-     * @return array 翻转后的通道数据
+     * @return array<int, array<int, int>> 翻转后的通道数据
      */
     protected function flipImageChannel(array $channel, bool $horizontal, bool $vertical): array
     {
@@ -426,9 +428,9 @@ class BlindWatermark
     /**
      * 旋转图像通道
      *
-     * @param array $channel 图像通道数据
+     * @param array<int, array<int, int>> $channel 图像通道数据
      * @param int $angle 旋转角度 (90, 180, 270)
-     * @return array 旋转后的通道数据
+     * @return array<int, array<int, int>> 旋转后的通道数据
      */
     protected function rotateImageChannel(array $channel, int $angle): array
     {
