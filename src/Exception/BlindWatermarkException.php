@@ -34,6 +34,6 @@ class BlindWatermarkException extends \Exception
      */
     public static function create(string $message, int $code = 0, \Throwable $previous = null): self
     {
-        return new static($message, $code, $previous);
+        return new self($message, $code, $previous);
     }
 }
