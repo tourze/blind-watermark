@@ -85,7 +85,8 @@ class ImageTransformer
         }
         
         // 合并通道回图像
-        return $this->processor->mergeChannels($channels);
+        $this->processor->mergeChannels($channels);
+        return true;
     }
     
     /**
@@ -128,7 +129,8 @@ class ImageTransformer
         }
         
         // 合并通道回图像
-        return $this->processor->mergeChannels($channels);
+        $this->processor->mergeChannels($channels);
+        return true;
     }
     
     /**

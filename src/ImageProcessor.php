@@ -74,7 +74,7 @@ class ImageProcessor
 
         $this->width = $imageInfo[0];
         $this->height = $imageInfo[1];
-        $mimeType = $imageInfo['mime'] ?? '';
+        $mimeType = $imageInfo['mime'];
 
         $this->logger->debug("加载图像: {$filePath}, 尺寸: {$this->width}x{$this->height}, 类型: {$mimeType}");
 

@@ -32,8 +32,8 @@ class BlindWatermarkException extends \Exception
      * @param \Throwable|null $previous 前一个异常
      * @return static
      */
-    public static function create(string $message, int $code = 0, \Throwable $previous = null): self
+    public static function create(string $message, int $code = 0, \Throwable $previous = null): static
     {
-        return new self($message, $code, $previous);
+        return new static($message, $code, $previous);
     }
 }

@@ -132,7 +132,7 @@ foreach ($images as $image) {
     $params = array_merge([$path], $image['params']);
 
     $result = call_user_func_array($function, $params);
-    if ($result) {
+    if ($result === true) {
         $generatedCount++;
         echo "Generated {$image['name']}\n";
     } else {
