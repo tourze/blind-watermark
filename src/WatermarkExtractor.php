@@ -73,7 +73,7 @@ class WatermarkExtractor
 
     /**
      * 构造函数
-     * 
+     *
      * @param LoggerInterface|null $logger 日志记录器
      */
     public function __construct(?LoggerInterface $logger = null)

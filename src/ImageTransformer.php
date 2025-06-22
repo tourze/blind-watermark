@@ -214,7 +214,7 @@ class ImageTransformer
     
     /**
      * 检测图像的旋转角度
-     * 
+     *
      * 通过比较与参考图像的相似度，估计旋转角度
      *
      * @param string $referencePath 参考图像路径
@@ -258,7 +258,7 @@ class ImageTransformer
     
     /**
      * 检测图像的翻转方向
-     * 
+     *
      * 通过与参考图像比较，检测是否存在翻转
      *
      * @param string $referencePath 参考图像路径

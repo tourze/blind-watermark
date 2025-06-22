@@ -24,7 +24,7 @@ class ImageProcessor
 
     /**
      * 原始图像GD资源
-     * 
+     *
      * @var resource|\GdImage|null
      */
     protected $image = null;
@@ -46,7 +46,7 @@ class ImageProcessor
 
     /**
      * 构造函数
-     * 
+     *
      * @param LoggerInterface|null $logger 日志记录器
      */
     public function __construct(?LoggerInterface $logger = null)
@@ -56,7 +56,7 @@ class ImageProcessor
 
     /**
      * 从文件加载图像
-     * 
+     *
      * @param string $filePath 图像文件路径
      * @return bool 加载是否成功
      * @throws \Exception 文件不存在或加载失败时抛出异常
@@ -108,7 +108,7 @@ class ImageProcessor
     
     /**
      * 创建一个新的空白图像
-     * 
+     *
      * @param int $width 图像宽度
      * @param int $height 图像高度
      * @return bool 创建是否成功
@@ -135,7 +135,7 @@ class ImageProcessor
     
     /**
      * 获取图像宽度
-     * 
+     *
      * @return int 图像宽度
      */
     public function getWidth(): int
@@ -145,7 +145,7 @@ class ImageProcessor
     
     /**
      * 获取图像高度
-     * 
+     *
      * @return int 图像高度
      */
     public function getHeight(): int
@@ -155,7 +155,7 @@ class ImageProcessor
 
     /**
      * 将图像保存到文件
-     * 
+     *
      * @param string $filePath 保存路径
      * @param string $type 图像类型，支持jpeg和png
      * @param int $quality 图像质量(1-100)
@@ -194,7 +194,7 @@ class ImageProcessor
 
     /**
      * 将图像分割为RGB三个通道
-     * 
+     *
      * @return array<string, array<int, array<int, int>>> 包含三个通道的二维数组，键名为'red', 'green', 'blue'
      * @throws \Exception 图像未加载时抛出异常
      */
@@ -234,7 +234,7 @@ class ImageProcessor
 
     /**
      * 获取图像GD资源
-     * 
+     *
      * @return resource|\GdImage|null 图像GD资源
      */
     public function getImage()
@@ -244,7 +244,7 @@ class ImageProcessor
 
     /**
      * 将RGB三个通道合并为一个图像
-     * 
+     *
      * @param array<string, array<int, array<int, int>>> $channels 包含三个通道的二维数组，键名为'red', 'green', 'blue'
      * @return self 图像处理器实例，支持链式调用
      * @throws \Exception 图像未加载或通道数据无效时抛出异常

@@ -39,7 +39,7 @@ class BlindWatermark
 
     /**
      * 水印嵌入位置
-     * 
+     *
      * @var array<int>
      */
     protected array $position = [3, 4];
@@ -71,7 +71,7 @@ class BlindWatermark
 
     /**
      * 构造函数
-     * 
+     *
      * @param LoggerInterface|null $logger 可选的日志记录器
      */
     public function __construct(?LoggerInterface $logger = null)
@@ -124,7 +124,7 @@ class BlindWatermark
     
     /**
      * 启用对称性嵌入和提取功能（增强抗翻转攻击能力）
-     * 
+     *
      * 此功能可以使水印对图像的翻转和旋转操作具有一定的鲁棒性
      *
      * @param bool $enabled 是否启用
@@ -140,7 +140,7 @@ class BlindWatermark
     
     /**
      * 启用多点嵌入和提取功能（增强水印鲁棒性）
-     * 
+     *
      * 此功能可以通过在多个位置同时嵌入相同的水印比特，提高水印对图像处理操作的鲁棒性
      *
      * @param bool $enabled 是否启用
@@ -156,7 +156,7 @@ class BlindWatermark
     
     /**
      * 启用几何变换修正功能
-     * 
+     *
      * 此功能可以检测和修正图像的几何变换（如翻转、旋转等），提高水印提取的成功率
      *
      * @param bool $enabled 是否启用
@@ -171,7 +171,7 @@ class BlindWatermark
     
     /**
      * 保存嵌入水印后的图像作为参考图像
-     * 
+     *
      * 参考图像用于几何变换的检测和修正，通过比较原始水印图像和变换后的图像，
      * 可以检测出图像经历了哪些几何变换
      *

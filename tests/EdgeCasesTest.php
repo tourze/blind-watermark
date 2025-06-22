@@ -95,7 +95,7 @@ class EdgeCasesTest extends TestCase
 
     /**
      * 测试非常小的图像
-     * 
+     *
      * 注：在非常小的图像上嵌入和提取水印可能不稳定
      */
     public function testVerySmallImage(): void
