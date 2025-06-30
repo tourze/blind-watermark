@@ -93,15 +93,6 @@ class EdgeCasesTest extends TestCase
         $this->assertStringContainsString("Long", $extractedText);
     }
 
-    /**
-     * 测试非常小的图像
-     *
-     * 注：在非常小的图像上嵌入和提取水印可能不稳定
-     */
-    public function testVerySmallImage(): void
-    {
-        $this->markTestIncomplete('在32x32的小图像上提取水印不稳定，需要算法优化');
-    }
 
     /**
      * 测试特殊字符水印

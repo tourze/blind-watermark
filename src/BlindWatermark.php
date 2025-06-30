@@ -4,6 +4,7 @@ namespace Tourze\BlindWatermark;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Tourze\BlindWatermark\Exception\BlindWatermarkException;
 
 /**
  * 盲水印主类
@@ -193,7 +194,7 @@ class BlindWatermark
      *
      * @param string $filePath 图像文件路径
      * @return self
-     * @throws \Exception 图像加载失败时抛出异常
+     * @throws BlindWatermarkException 图像加载失败时抛出异常
      */
     public function loadImage(string $filePath): self
     {
@@ -207,12 +208,12 @@ class BlindWatermark
      *
      * @param string $text 要嵌入的文本水印
      * @return self
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function embedText(string $text): self
     {
         if ($this->imageProcessor === null) {
-            throw new \Exception("请先加载图像");
+            throw new BlindWatermarkException("请先加载图像");
         }
 
         $this->imageProcessor = $this->embedder->embed($this->imageProcessor, $text);
@@ -223,12 +224,12 @@ class BlindWatermark
      * 从当前加载的带水印图像中提取文本水印
      *
      * @return string 提取的文本水印
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function extractText(): string
     {
         if ($this->imageProcessor === null) {
-            throw new \Exception("请先加载图像");
+            throw new BlindWatermarkException("请先加载图像");
         }
 
         return $this->extractor->extract($this->imageProcessor);
@@ -241,12 +242,12 @@ class BlindWatermark
      * @param string $type 图像类型，支持jpeg和png
      * @param int $quality 图像质量(1-100)
      * @return bool 保存是否成功
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function saveImage(string $filePath, string $type = ImageProcessor::IMAGE_TYPE_JPEG, int $quality = 90): bool
     {
         if ($this->imageProcessor === null) {
-            throw new \Exception("请先加载图像");
+            throw new BlindWatermarkException("请先加载图像");
         }
 
         return $this->imageProcessor->saveToFile($filePath, $type, $quality);
@@ -261,7 +262,7 @@ class BlindWatermark
      * @param string $type 图像类型，支持jpeg和png
      * @param int $quality 图像质量(1-100)
      * @return bool 操作是否成功
-     * @throws \Exception 处理图像时可能抛出异常
+     * @throws BlindWatermarkException 处理图像时可能抛出异常
      */
     public function embedTextToImage(
         string $srcImagePath,
@@ -287,7 +288,7 @@ class BlindWatermark
      *
      * @param string $watermarkedImagePath 带水印图像路径
      * @return string 提取的文本水印
-     * @throws \Exception 处理图像时可能抛出异常
+     * @throws BlindWatermarkException 处理图像时可能抛出异常
      */
     public function extractTextFromImage(string $watermarkedImagePath): string
     {
@@ -299,12 +300,12 @@ class BlindWatermark
      * 对图像进行水平翻转（用于测试水印的抗翻转能力）
      *
      * @return self
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function flipHorizontal(): self
     {
         if ($this->imageProcessor === null) {
-            throw new \Exception("请先加载图像");
+            throw new BlindWatermarkException("请先加载图像");
         }
         
         $channels = $this->imageProcessor->splitChannels();
@@ -324,12 +325,12 @@ class BlindWatermark
      * 对图像进行垂直翻转（用于测试水印的抗翻转能力）
      *
      * @return self
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function flipVertical(): self
     {
         if ($this->imageProcessor === null) {
-            throw new \Exception("请先加载图像");
+            throw new BlindWatermarkException("请先加载图像");
         }
         
         $channels = $this->imageProcessor->splitChannels();
@@ -350,16 +351,16 @@ class BlindWatermark
      *
      * @param int $angle 旋转角度 (90, 180, 270)
      * @return self
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function rotate(int $angle): self
     {
         if ($this->imageProcessor === null) {
-            throw new \Exception("请先加载图像");
+            throw new BlindWatermarkException("请先加载图像");
         }
         
         if ($angle % 90 !== 0) {
-            throw new \Exception("当前仅支持90度的倍数进行旋转");
+            throw new BlindWatermarkException("当前仅支持90度的倍数进行旋转");
         }
         
         $angle = $angle % 360;

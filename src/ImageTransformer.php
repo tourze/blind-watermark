@@ -4,10 +4,11 @@ namespace Tourze\BlindWatermark;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Tourze\BlindWatermark\Exception\BlindWatermarkException;
 
 /**
  * 图像几何变换处理类
- * 
+ *
  * 负责图像的翻转、旋转等几何变换操作
  */
 class ImageTransformer
@@ -49,12 +50,12 @@ class ImageTransformer
      *
      * @param string $direction 翻转方向，可选值：horizontal(水平), vertical(垂直)
      * @return bool 操作是否成功
-     * @throws \Exception 参数无效或操作失败时抛出异常
+     * @throws BlindWatermarkException 参数无效或操作失败时抛出异常
      */
     public function flip(string $direction): bool
     {
         if ($direction !== self::FLIP_HORIZONTAL && $direction !== self::FLIP_VERTICAL) {
-            throw new \Exception("无效的翻转方向，可选值: horizontal, vertical");
+            throw new BlindWatermarkException("无效的翻转方向，可选值: horizontal, vertical");
         }
         
         $this->logger->debug("翻转图像: {$direction}");
@@ -64,7 +65,7 @@ class ImageTransformer
         $height = $this->processor->getHeight();
         
         if ($width <= 0 || $height <= 0) {
-            throw new \Exception("无效的图像尺寸");
+            throw new BlindWatermarkException("无效的图像尺寸");
         }
         
         // 分离通道
@@ -94,7 +95,7 @@ class ImageTransformer
      *
      * @param float $angle 旋转角度，正值为顺时针，负值为逆时针
      * @return bool 操作是否成功
-     * @throws \Exception 参数无效或操作失败时抛出异常
+     * @throws BlindWatermarkException 参数无效或操作失败时抛出异常
      */
     public function rotate(float $angle): bool
     {
@@ -105,7 +106,7 @@ class ImageTransformer
         $height = $this->processor->getHeight();
         
         if ($width <= 0 || $height <= 0) {
-            throw new \Exception("无效的图像尺寸");
+            throw new BlindWatermarkException("无效的图像尺寸");
         }
         
         // 分离通道，进行旋转计算较为复杂，这里只处理常见的90/180/270度旋转
@@ -125,7 +126,7 @@ class ImageTransformer
         } elseif (abs($normalizedAngle - 270) < 0.001) {
             $this->rotateChannels270($channels);
         } else {
-            throw new \Exception("当前仅支持90度的倍数旋转");
+            throw new BlindWatermarkException("当前仅支持90度的倍数旋转");
         }
         
         // 合并通道回图像
@@ -152,10 +153,10 @@ class ImageTransformer
                 $rotated[$x] = [];
             }
             
-            // 90度顺时针旋转: (x,y) -> (y, width-1-x)
+            // 90度顺时针旋转: (x,y) -> (y, height-1-x)
             for ($y = 0; $y < $height; $y++) {
                 for ($x = 0; $x < $width; $x++) {
-                    $rotated[$width - 1 - $y][$x] = $channels[$channel][$x][$y];
+                    $rotated[$x][$height - 1 - $y] = $channels[$channel][$y][$x];
                 }
             }
             
@@ -201,10 +202,10 @@ class ImageTransformer
                 $rotated[$x] = [];
             }
             
-            // 270度顺时针旋转: (x,y) -> (width-1-y, x)
+            // 270度顺时针旋转: (x,y) -> (height-1-y, x)
             for ($y = 0; $y < $height; $y++) {
                 for ($x = 0; $x < $width; $x++) {
-                    $rotated[$y][$width - 1 - $x] = $channels[$channel][$x][$y];
+                    $rotated[$width - 1 - $x][$y] = $channels[$channel][$y][$x];
                 }
             }
             
@@ -224,7 +225,12 @@ class ImageTransformer
     {
         // 创建临时图像处理器加载参考图像
         $referenceProcessor = new ImageProcessor($this->logger);
-        if (!$referenceProcessor->loadFromFile($referencePath)) {
+        try {
+            if (!$referenceProcessor->loadFromFile($referencePath)) {
+                $this->logger->error("无法加载参考图像: {$referencePath}");
+                return null;
+            }
+        } catch (\Exception $e) {
             $this->logger->error("无法加载参考图像: {$referencePath}");
             return null;
         }
@@ -268,7 +274,12 @@ class ImageTransformer
     {
         // 创建临时图像处理器加载参考图像
         $referenceProcessor = new ImageProcessor($this->logger);
-        if (!$referenceProcessor->loadFromFile($referencePath)) {
+        try {
+            if (!$referenceProcessor->loadFromFile($referencePath)) {
+                $this->logger->error("无法加载参考图像: {$referencePath}");
+                return null;
+            }
+        } catch (\Exception $e) {
             $this->logger->error("无法加载参考图像: {$referencePath}");
             return null;
         }

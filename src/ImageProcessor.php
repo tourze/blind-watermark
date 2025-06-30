@@ -4,10 +4,11 @@ namespace Tourze\BlindWatermark;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Tourze\BlindWatermark\Exception\BlindWatermarkException;
 
 /**
  * 图像处理类
- * 
+ *
  * 负责图像的加载、保存和GD相关操作
  */
 class ImageProcessor
@@ -59,17 +60,17 @@ class ImageProcessor
      *
      * @param string $filePath 图像文件路径
      * @return bool 加载是否成功
-     * @throws \Exception 文件不存在或加载失败时抛出异常
+     * @throws BlindWatermarkException 文件不存在或加载失败时抛出异常
      */
     public function loadFromFile(string $filePath): bool
     {
         if (!file_exists($filePath)) {
-            throw new \Exception("图像文件不存在: " . $filePath);
+            throw new BlindWatermarkException("图像文件不存在: " . $filePath);
         }
 
         $imageInfo = getimagesize($filePath);
         if ($imageInfo === false) {
-            throw new \Exception("无法获取图像信息: " . $filePath);
+            throw new BlindWatermarkException("无法获取图像信息: " . $filePath);
         }
 
         $this->width = $imageInfo[0];
@@ -86,11 +87,11 @@ class ImageProcessor
                 $this->image = imagecreatefrompng($filePath);
                 break;
             default:
-                throw new \Exception("不支持的图像类型: " . $mimeType);
+                throw new BlindWatermarkException("不支持的图像类型: " . $mimeType);
         }
 
         if ($this->image === false) {
-            throw new \Exception("图像加载失败: " . $filePath);
+            throw new BlindWatermarkException("图像加载失败: " . $filePath);
         }
 
         // 确保图像使用真彩色模式
@@ -160,12 +161,12 @@ class ImageProcessor
      * @param string $type 图像类型，支持jpeg和png
      * @param int $quality 图像质量(1-100)
      * @return bool 保存是否成功
-     * @throws \Exception 图像未加载或保存失败时抛出异常
+     * @throws BlindWatermarkException 图像未加载或保存失败时抛出异常
      */
     public function saveToFile(string $filePath, string $type = self::IMAGE_TYPE_JPEG, int $quality = 90): bool
     {
         if ($this->image === null) {
-            throw new \Exception("没有图像可以保存");
+            throw new BlindWatermarkException("没有图像可以保存");
         }
 
         $this->logger->debug("保存图像: {$filePath}, 类型: {$type}, 质量: {$quality}");
@@ -181,7 +182,7 @@ class ImageProcessor
                 $result = imagepng($this->image, $filePath, $pngQuality);
                 break;
             default:
-                throw new \Exception("不支持的图像类型: " . $type);
+                throw new BlindWatermarkException("不支持的图像类型: " . $type);
         }
 
         if ($result === false) {
@@ -196,12 +197,12 @@ class ImageProcessor
      * 将图像分割为RGB三个通道
      *
      * @return array<string, array<int, array<int, int>>> 包含三个通道的二维数组，键名为'red', 'green', 'blue'
-     * @throws \Exception 图像未加载时抛出异常
+     * @throws BlindWatermarkException 图像未加载时抛出异常
      */
     public function splitChannels(): array
     {
         if ($this->image === null) {
-            throw new \Exception("没有图像可以分割");
+            throw new BlindWatermarkException("没有图像可以分割");
         }
 
         $this->logger->debug("分割图像通道: {$this->width}x{$this->height}");
@@ -247,26 +248,26 @@ class ImageProcessor
      *
      * @param array<string, array<int, array<int, int>>> $channels 包含三个通道的二维数组，键名为'red', 'green', 'blue'
      * @return self 图像处理器实例，支持链式调用
-     * @throws \Exception 图像未加载或通道数据无效时抛出异常
+     * @throws BlindWatermarkException 图像未加载或通道数据无效时抛出异常
      */
     public function mergeChannels(array $channels): self
     {
         if ($this->image === null) {
-            throw new \Exception("没有图像可以合并通道");
+            throw new BlindWatermarkException("没有图像可以合并通道");
         }
 
         if (!isset($channels['red']) || !isset($channels['green']) || !isset($channels['blue'])) {
-            throw new \Exception("通道数据无效，必须包含red、green和blue三个通道");
+            throw new BlindWatermarkException("通道数据无效，必须包含red、green和blue三个通道");
         }
 
         $height = count($channels['red']);
         if ($height === 0 || $height !== $this->height) {
-            throw new \Exception("通道数据高度与图像不匹配");
+            throw new BlindWatermarkException("通道数据高度与图像不匹配");
         }
 
         $width = count($channels['red'][0]);
         if ($width === 0 || $width !== $this->width) {
-            throw new \Exception("通道数据宽度与图像不匹配");
+            throw new BlindWatermarkException("通道数据宽度与图像不匹配");
         }
 
         $this->logger->debug("合并图像通道: {$width}x{$height}");
