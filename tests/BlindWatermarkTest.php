@@ -2,12 +2,17 @@
 
 namespace Tourze\BlindWatermark\Tests;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Tourze\BlindWatermark\BlindWatermark;
 use Tourze\BlindWatermark\ImageProcessor;
 use Tourze\BlindWatermark\Utils\DCT;
 
-class BlindWatermarkTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(BlindWatermark::class)]
+final class BlindWatermarkTest extends TestCase
 {
     /**
      * 测试临时目录
@@ -39,7 +44,7 @@ class BlindWatermarkTest extends TestCase
         // 创建测试临时目录
         $this->tempDir = sys_get_temp_dir() . '/blindwatermark_test_' . uniqid();
         if (!is_dir($this->tempDir)) {
-            mkdir($this->tempDir, 0777, true);
+            mkdir($this->tempDir, 0o777, true);
         }
 
         // 使用生成的测试图像
@@ -59,7 +64,7 @@ class BlindWatermarkTest extends TestCase
             [120, 90, 80, 70],
             [100, 110, 120, 130],
             [80, 85, 90, 95],
-            [70, 75, 80, 85]
+            [70, 75, 80, 85],
         ];
 
         // 进行DCT正变换
@@ -69,11 +74,16 @@ class BlindWatermarkTest extends TestCase
         $recoveredMatrix = DCT::inverse($dctMatrix);
 
         // 验证恢复的矩阵与原始矩阵近似相等（考虑浮点误差）
-        for ($i = 0; $i < count($matrix); $i++) {
-            for ($j = 0; $j < count($matrix[0]); $j++) {
+        $assertionCount = 0;
+        for ($i = 0; $i < count($matrix); ++$i) {
+            for ($j = 0; $j < count($matrix[0]); ++$j) {
                 $this->assertEqualsWithDelta($matrix[$i][$j], $recoveredMatrix[$i][$j], 0.5);
+                ++$assertionCount;
             }
         }
+
+        // 确保至少执行了一些断言
+        $this->assertGreaterThan(0, $assertionCount, '应该至少执行了一些断言');
     }
 
     /**
@@ -169,6 +179,210 @@ class BlindWatermarkTest extends TestCase
             if (file_exists($outputPath)) {
                 unlink($outputPath);
             }
+        }
+    }
+
+    /**
+     * 测试loadImage方法
+     */
+    public function testLoadImage(): void
+    {
+        $watermark = new BlindWatermark();
+        $result = $watermark->loadImage($this->testImagePath);
+
+        $this->assertInstanceOf(BlindWatermark::class, $result);
+    }
+
+    /**
+     * 测试embedText方法
+     */
+    public function testEmbedText(): void
+    {
+        $watermark = new BlindWatermark();
+        $watermark->loadImage($this->testImagePath);
+
+        $result = $watermark->embedText($this->watermarkText);
+        $this->assertInstanceOf(BlindWatermark::class, $result);
+    }
+
+    /**
+     * 测试extractText方法
+     */
+    public function testExtractText(): void
+    {
+        $watermark = new BlindWatermark();
+
+        // 先嵌入水印
+        $watermark->loadImage($this->testImagePath);
+        $watermark->embedText($this->watermarkText);
+
+        // 提取水印
+        $extractedText = $watermark->extractText();
+        $this->assertEquals($this->watermarkText, $extractedText);
+    }
+
+    /**
+     * 测试saveImage方法
+     */
+    public function testSaveImage(): void
+    {
+        $watermark = new BlindWatermark();
+        $savePath = $this->tempDir . '/saved_test.png';
+
+        $watermark->loadImage($this->testImagePath);
+        $watermark->embedText($this->watermarkText);
+
+        $result = $watermark->saveImage($savePath, ImageProcessor::IMAGE_TYPE_PNG);
+        $this->assertTrue($result);
+        $this->assertFileExists($savePath);
+
+        if (file_exists($savePath)) {
+            unlink($savePath);
+        }
+    }
+
+    /**
+     * 测试saveAsReference方法
+     */
+    public function testSaveAsReference(): void
+    {
+        $watermark = new BlindWatermark();
+        $watermark->loadImage($this->testImagePath);
+        $watermark->embedText($this->watermarkText);
+
+        $result = $watermark->saveAsReference();
+        $this->assertInstanceOf(BlindWatermark::class, $result);
+    }
+
+    /**
+     * 测试enableGeometricCorrection方法
+     */
+    public function testEnableGeometricCorrection(): void
+    {
+        $watermark = new BlindWatermark();
+
+        $watermark->enableGeometricCorrection(true);
+        $this->assertInstanceOf(BlindWatermark::class, $watermark);
+
+        $watermark->enableGeometricCorrection(false);
+        $this->assertInstanceOf(BlindWatermark::class, $watermark);
+    }
+
+    /**
+     * 测试enableSymmetricEmbedding方法
+     */
+    public function testEnableSymmetricEmbedding(): void
+    {
+        $watermark = new BlindWatermark();
+
+        $watermark->enableSymmetricEmbedding(true);
+        $this->assertInstanceOf(BlindWatermark::class, $watermark);
+
+        $watermark->enableSymmetricEmbedding(false);
+        $this->assertInstanceOf(BlindWatermark::class, $watermark);
+    }
+
+    /**
+     * 测试enableMultiPointEmbedding方法
+     */
+    public function testEnableMultiPointEmbedding(): void
+    {
+        $watermark = new BlindWatermark();
+
+        $watermark->enableMultiPointEmbedding(true);
+        $this->assertInstanceOf(BlindWatermark::class, $watermark);
+
+        $watermark->enableMultiPointEmbedding(false);
+        $this->assertInstanceOf(BlindWatermark::class, $watermark);
+    }
+
+    /**
+     * 测试flipHorizontal方法
+     */
+    public function testFlipHorizontal(): void
+    {
+        $watermark = new BlindWatermark();
+        $watermark->loadImage($this->testImagePath);
+
+        $result = $watermark->flipHorizontal();
+        $this->assertInstanceOf(BlindWatermark::class, $result);
+    }
+
+    /**
+     * 测试flipVertical方法
+     */
+    public function testFlipVertical(): void
+    {
+        $watermark = new BlindWatermark();
+        $watermark->loadImage($this->testImagePath);
+
+        $result = $watermark->flipVertical();
+        $this->assertInstanceOf(BlindWatermark::class, $result);
+    }
+
+    /**
+     * 测试rotate方法
+     */
+    public function testRotate(): void
+    {
+        $watermark = new BlindWatermark();
+        $watermark->loadImage($this->testImagePath);
+
+        // 测试不同旋转角度
+        $angles = [90, 180, 270, 360];
+        foreach ($angles as $angle) {
+            $result = $watermark->rotate($angle);
+            $this->assertInstanceOf(BlindWatermark::class, $result);
+        }
+    }
+
+    /**
+     * 测试embedTextToImage方法
+     */
+    public function testEmbedTextToImage(): void
+    {
+        $watermark = new BlindWatermark();
+        $outputPath = $this->tempDir . '/embed_text_to_image_test.png';
+
+        $result = $watermark->embedTextToImage(
+            $this->testImagePath,
+            $this->watermarkText,
+            $outputPath,
+            ImageProcessor::IMAGE_TYPE_PNG
+        );
+
+        $this->assertTrue($result);
+        $this->assertFileExists($outputPath);
+
+        // 清理
+        if (file_exists($outputPath)) {
+            unlink($outputPath);
+        }
+    }
+
+    /**
+     * 测试extractTextFromImage方法
+     */
+    public function testExtractTextFromImage(): void
+    {
+        $watermark = new BlindWatermark();
+        $outputPath = $this->tempDir . '/extract_text_from_image_test.png';
+
+        // 先嵌入水印
+        $watermark->embedTextToImage(
+            $this->testImagePath,
+            $this->watermarkText,
+            $outputPath,
+            ImageProcessor::IMAGE_TYPE_PNG
+        );
+
+        // 然后提取
+        $extractedText = $watermark->extractTextFromImage($outputPath);
+        $this->assertEquals($this->watermarkText, $extractedText);
+
+        // 清理
+        if (file_exists($outputPath)) {
+            unlink($outputPath);
         }
     }
 }

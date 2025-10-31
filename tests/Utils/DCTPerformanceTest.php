@@ -2,6 +2,7 @@
 
 namespace Tourze\BlindWatermark\Tests\Utils;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use SebastianBergmann\Timer\Timer;
 use Tourze\BlindWatermark\Utils\DCT;
@@ -10,18 +11,28 @@ use Tourze\BlindWatermark\Utils\DCT;
  * DCT性能测试类
  *
  * 测试常规DCT实现和快速DCT实现的性能差异
+ *
+ * @internal
  */
-class DCTPerformanceTest extends TestCase
+#[CoversClass(DCT::class)]
+final class DCTPerformanceTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // DCT性能测试不需要特殊的设置
+    }
+
     /**
      * 测试矩阵尺寸
      */
-    protected const MATRIX_SIZE = 32;
+    protected const MATRIX_SIZE = 16;
 
     /**
      * 性能测试轮次
      */
-    protected const TEST_ROUNDS = 3;
+    protected const TEST_ROUNDS = 1;
 
     /**
      * 测试简单矩阵DCT性能
@@ -29,42 +40,50 @@ class DCTPerformanceTest extends TestCase
     public function testDCTPerformance(): void
     {
         // 创建测试矩阵，减小尺寸以加快测试
-        $size = 64; // 从256减小到64
+        $size = 16; // 从256减小到16
         $matrix = [];
-        for ($i = 0; $i < $size; $i++) {
+        for ($i = 0; $i < $size; ++$i) {
             $matrix[$i] = [];
-            for ($j = 0; $j < $size; $j++) {
+            for ($j = 0; $j < $size; ++$j) {
                 $matrix[$i][$j] = sin($i) * cos($j) * 128 + 128;
             }
         }
 
+        // 初始化变量
+        $dct = [];
+        $idct = [];
+
         // 计时标准方法
         $timer = new Timer();
         $timer->start();
-        for ($i = 0; $i < 3; $i++) { // 从10减少到3
+        for ($i = 0; $i < 1; ++$i) { // 从10减少到1
             DCT::setUseFastImplementation(false);
             $dct = DCT::forward($matrix);
             $idct = DCT::inverse($dct);
         }
-        $standardTime = $timer->stop()->asMicroseconds() / 3;
+        $standardTime = $timer->stop()->asMicroseconds() / 1000000; // 转换为秒
 
         // 计时优化方法
         $timer->start();
-        for ($i = 0; $i < 3; $i++) { // 从10减少到3
+        for ($i = 0; $i < 1; ++$i) { // 从10减少到1
             DCT::setUseFastImplementation(true);
             $dct = DCT::fastForward($matrix, $size, $size);
             $idct = DCT::fastInverse($dct, $size, $size);
         }
-        $fastTime = $timer->stop()->asMicroseconds() / 3;
+        $fastTime = $timer->stop()->asMicroseconds() / 1000000; // 转换为秒
 
         // 计算加速比
         $speedup = $standardTime / $fastTime;
-        echo "标准DCT平均执行时间: " . number_format($standardTime, 5) . " 秒\n";
-        echo "快速DCT平均执行时间: " . number_format($fastTime, 5) . " 秒\n";
-        echo "性能提升: " . number_format($speedup, 2) . "倍\n";
+        // 性能日志已移除，避免测试输出导致 risky 警告
+        // echo '标准DCT平均执行时间: ' . number_format($standardTime, 5) . " 秒\n";
+        // echo '快速DCT平均执行时间: ' . number_format($fastTime, 5) . " 秒\n";
+        // echo '性能提升: ' . number_format($speedup, 2) . "倍\n";
 
-        // 只要不抛出异常就算测试通过
-        $this->addToAssertionCount(1);
+        // 验证两种方法都能正常工作并产生有效结果
+        $this->assertNotEmpty($dct, 'DCT变换结果不应为空');
+        $this->assertNotEmpty($idct, '逆DCT变换结果不应为空');
+        $this->assertGreaterThan(0, $standardTime, '标准方法执行时间应大于0');
+        $this->assertGreaterThan(0, $fastTime, '快速方法执行时间应大于0');
     }
 
     /**
@@ -73,44 +92,52 @@ class DCTPerformanceTest extends TestCase
     public function testBlockDCTPerformance(): void
     {
         // 创建测试矩阵，减小尺寸以加快测试
-        $height = 64; // 从256减小到64
-        $width = 64;  // 从256减小到64
+        $height = 32; // 从256减小到32
+        $width = 32;  // 从256减小到32
         $blockSize = 8;
         $matrix = [];
-        for ($i = 0; $i < $height; $i++) {
+        for ($i = 0; $i < $height; ++$i) {
             $matrix[$i] = [];
-            for ($j = 0; $j < $width; $j++) {
+            for ($j = 0; $j < $width; ++$j) {
                 $matrix[$i][$j] = sin($i) * cos($j) * 128 + 128;
             }
         }
 
+        // 初始化变量
+        $dctBlocks = [];
+        $recovered = [];
+
         // 计时标准方法
         $timer = new Timer();
         $timer->start();
-        for ($i = 0; $i < 2; $i++) { // 从5减少到2
+        for ($i = 0; $i < 1; ++$i) { // 从5减少到1
             DCT::setUseFastImplementation(false);
             $dctBlocks = DCT::blockDCT($matrix, $blockSize);
             $recovered = DCT::blockIDCT($dctBlocks, $height, $width, $blockSize);
         }
-        $standardTime = $timer->stop()->asMicroseconds() / 2;
+        $standardTime = $timer->stop()->asMicroseconds() / 1000000; // 转换为秒
 
         // 计时优化方法
         $timer->start();
-        for ($i = 0; $i < 2; $i++) { // 从5减少到2
+        for ($i = 0; $i < 1; ++$i) { // 从5减少到1
             DCT::setUseFastImplementation(true);
             $dctBlocks = DCT::blockDCT($matrix, $blockSize);
             $recovered = DCT::blockIDCT($dctBlocks, $height, $width, $blockSize);
         }
-        $fastTime = $timer->stop()->asMicroseconds() / 2;
+        $fastTime = $timer->stop()->asMicroseconds() / 1000000; // 转换为秒
 
         // 计算加速比
         $speedup = $standardTime / $fastTime;
-        echo "标准分块DCT平均执行时间: " . number_format($standardTime, 5) . " 秒\n";
-        echo "快速分块DCT平均执行时间: " . number_format($fastTime, 5) . " 秒\n";
-        echo "性能提升: " . number_format($speedup, 2) . "倍\n";
+        // 性能日志已移除，避免测试输出导致 risky 警告
+        // echo '标准分块DCT平均执行时间: ' . number_format($standardTime, 5) . " 秒\n";
+        // echo '快速分块DCT平均执行时间: ' . number_format($fastTime, 5) . " 秒\n";
+        // echo '性能提升: ' . number_format($speedup, 2) . "倍\n";
 
-        // 只要不抛出异常就算测试通过
-        $this->addToAssertionCount(1);
+        // 验证分块DCT处理结果有效
+        $this->assertNotEmpty($dctBlocks, '分块DCT结果不应为空');
+        $this->assertNotEmpty($recovered, '恢复的图像数据不应为空');
+        $this->assertGreaterThan(0, $standardTime, '标准方法执行时间应大于0');
+        $this->assertGreaterThan(0, $fastTime, '快速方法执行时间应大于0');
     }
 
     /**
@@ -148,50 +175,16 @@ class DCTPerformanceTest extends TestCase
         $fastDct = DCT::forward($zeroMatrix);
 
         // 验证两种实现的结果都是零矩阵
-        for ($i = 0; $i < 4; $i++) {
-            for ($j = 0; $j < 4; $j++) {
+        $assertionCount = 0;
+        for ($i = 0; $i < 4; ++$i) {
+            for ($j = 0; $j < 4; ++$j) {
                 $this->assertEqualsWithDelta(0, $stdDct[$i][$j], 0.001);
                 $this->assertEqualsWithDelta(0, $fastDct[$i][$j], 0.001);
+                $assertionCount += 2;
             }
         }
-    }
 
-    /**
-     * 创建测试矩阵
-     *
-     * @param int $size 矩阵尺寸
-     * @return array 随机值填充的矩阵
-     */
-    protected function createTestMatrix(int $size): array
-    {
-        $matrix = [];
-        for ($i = 0; $i < $size; $i++) {
-            $matrix[$i] = [];
-            for ($j = 0; $j < $size; $j++) {
-                $matrix[$i][$j] = mt_rand(0, 255);
-            }
-        }
-        return $matrix;
-    }
-
-    /**
-     * 测量函数执行时间
-     *
-     * @param callable $function 要测试的函数
-     * @return float 平均执行时间（秒）
-     */
-    protected function benchmarkFunction(callable $function): float
-    {
-        $times = [];
-
-        for ($i = 0; $i < self::TEST_ROUNDS; $i++) {
-            $start = microtime(true);
-            $function();
-            $end = microtime(true);
-            $times[] = $end - $start;
-        }
-
-        // 计算平均执行时间
-        return array_sum($times) / count($times);
+        // 确保至少执行了一些断言
+        $this->assertGreaterThan(0, $assertionCount, '应该至少执行了一些断言');
     }
 }

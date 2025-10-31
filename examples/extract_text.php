@@ -26,12 +26,12 @@ try {
     $extractedText = $watermark->extractTextFromImage($watermarkedImagePath);
 
     if (!empty($extractedText)) {
-        echo "成功提取水印文本: " . $extractedText . "\n";
+        echo '成功提取水印文本: ' . $extractedText . "\n";
     } else {
         echo "未能提取到水印，或水印为空\n";
         exit(1);
     }
 } catch (Exception $e) {
-    echo "错误: " . $e->getMessage() . "\n";
+    echo '错误: ' . $e->getMessage() . "\n";
     exit(1);
 }

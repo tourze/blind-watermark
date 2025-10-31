@@ -25,7 +25,7 @@ $watermark = new BlindWatermark();
 
 // 根据图片格式确定输出类型
 $type = pathinfo($destImagePath, PATHINFO_EXTENSION);
-$imageType = strtolower($type) === 'png' ? 'png' : 'jpeg';
+$imageType = 'png' === strtolower($type) ? 'png' : 'jpeg';
 
 try {
     // 设置参数并嵌入水印
@@ -48,6 +48,6 @@ try {
         exit(1);
     }
 } catch (Exception $e) {
-    echo "错误: " . $e->getMessage() . "\n";
+    echo '错误: ' . $e->getMessage() . "\n";
     exit(1);
 }

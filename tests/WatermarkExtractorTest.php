@@ -2,12 +2,17 @@
 
 namespace Tourze\BlindWatermark\Tests;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Tourze\BlindWatermark\ImageProcessor;
 use Tourze\BlindWatermark\WatermarkEmbedder;
 use Tourze\BlindWatermark\WatermarkExtractor;
 
-class WatermarkExtractorTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(WatermarkExtractor::class)]
+final class WatermarkExtractorTest extends TestCase
 {
     /**
      * 测试临时目录
@@ -29,7 +34,7 @@ class WatermarkExtractorTest extends TestCase
         // 创建测试临时目录
         $this->tempDir = sys_get_temp_dir() . '/extractor_test_' . uniqid();
         if (!is_dir($this->tempDir)) {
-            mkdir($this->tempDir, 0777, true);
+            mkdir($this->tempDir, 0o777, true);
         }
 
         // 使用已生成的测试图像
@@ -43,11 +48,11 @@ class WatermarkExtractorTest extends TestCase
     {
         $extractor = new WatermarkExtractor();
 
-        // 测试链式调用
-        $result = $extractor->setBlockSize(16)
-            ->setPosition([5, 6]);
+        // 测试setter方法调用
+        $extractor->setBlockSize(16);
+        $extractor->setPosition([5, 6]);
 
-        $this->assertInstanceOf(WatermarkExtractor::class, $result);
+        $this->assertInstanceOf(WatermarkExtractor::class, $extractor);
     }
 
     /**
@@ -93,7 +98,7 @@ class WatermarkExtractorTest extends TestCase
         $positions = [
             [1, 1],  // 低频位置
             [3, 4],  // 默认中频位置
-            [6, 6]   // 高频位置
+            [6, 6],   // 高频位置
         ];
 
         foreach ($positions as $position) {
@@ -149,7 +154,7 @@ class WatermarkExtractorTest extends TestCase
         $embedder = new WatermarkEmbedder();
         // 增加嵌入强度以提高提取准确性
         $embedder->setStrength(50);
-        
+
         $processor = new ImageProcessor();
         $processor->loadFromFile($this->testImagePath);
         $embeddedImage = $embedder->embed($processor, $longText);

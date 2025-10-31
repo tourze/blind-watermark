@@ -2,10 +2,15 @@
 
 namespace Tourze\BlindWatermark\Tests;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Tourze\BlindWatermark\ImageProcessor;
 
-class ImageProcessorTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(ImageProcessor::class)]
+final class ImageProcessorTest extends TestCase
 {
     /**
      * 测试临时目录
@@ -27,7 +32,7 @@ class ImageProcessorTest extends TestCase
         // 创建测试临时目录
         $this->tempDir = sys_get_temp_dir() . '/image_processor_test_' . uniqid();
         if (!is_dir($this->tempDir)) {
-            mkdir($this->tempDir, 0777, true);
+            mkdir($this->tempDir, 0o777, true);
         }
 
         // 使用已生成的测试图像
@@ -111,8 +116,8 @@ class ImageProcessorTest extends TestCase
         $this->assertArrayHasKey('blue', $channels);
 
         // 检查通道尺寸
-        $this->assertEquals($processor->getHeight(), count($channels['red']));
-        $this->assertEquals($processor->getWidth(), count($channels['red'][0]));
+        $this->assertCount($processor->getHeight(), $channels['red']);
+        $this->assertCount($processor->getWidth(), $channels['red'][0]);
 
         // 合并通道
         $result = $processor->mergeChannels($channels);
@@ -140,8 +145,8 @@ class ImageProcessorTest extends TestCase
 
         // 期望当缺少通道时抛出异常
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("通道数据无效，必须包含red、green和blue三个通道");
-        
+        $this->expectExceptionMessage('通道数据无效，必须包含red、green和blue三个通道');
+
         $processor->mergeChannels($invalidChannels);
     }
 
@@ -186,8 +191,28 @@ class ImageProcessorTest extends TestCase
 
         // 期望在没有图像时抛出异常
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("没有图像可以分割");
-        
+        $this->expectExceptionMessage('没有图像可以分割');
+
         $processor->splitChannels();
+    }
+
+    /**
+     * 测试mergeChannels方法
+     */
+    public function testMergeChannels(): void
+    {
+        $processor = new ImageProcessor();
+        $processor->loadFromFile($this->testImagePath);
+
+        // 分离通道
+        $channels = $processor->splitChannels();
+
+        // 合并通道
+        $result = $processor->mergeChannels($channels);
+        $this->assertInstanceOf(ImageProcessor::class, $result);
+
+        // 验证合并后图像仍然可用
+        $this->assertGreaterThan(0, $processor->getWidth());
+        $this->assertGreaterThan(0, $processor->getHeight());
     }
 }

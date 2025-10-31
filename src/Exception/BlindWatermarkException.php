@@ -27,13 +27,12 @@ class BlindWatermarkException extends \Exception
     /**
      * 创建特定类型的异常
      *
-     * @param string $message 错误消息
-     * @param int $code 错误代码
+     * @param string          $message  错误消息
+     * @param int             $code     错误代码
      * @param \Throwable|null $previous 前一个异常
-     * @return static
      */
-    public static function create(string $message, int $code = 0, ?\Throwable $previous = null): static
+    public static function create(string $message, int $code = 0, ?\Throwable $previous = null): self
     {
-        return new static($message, $code, $previous);
+        return new self($message, $code, $previous);
     }
 }

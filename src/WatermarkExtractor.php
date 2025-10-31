@@ -33,6 +33,8 @@ class WatermarkExtractor
 
     /**
      * 水印嵌入位置参数
+     *
+     * @var array<int, int>
      */
     protected array $position = [3, 4];
 
@@ -43,6 +45,8 @@ class WatermarkExtractor
 
     /**
      * 对称提取的位置参数（默认为原位置的对称位置）
+     *
+     * @var array<int, array<int, int>>
      */
     protected array $symmetricPositions = [];
 
@@ -53,6 +57,8 @@ class WatermarkExtractor
 
     /**
      * 多点提取的位置参数数组
+     *
+     * @var array<int, array<int, int>>
      */
     protected array $multiPoints = [];
 
@@ -63,6 +69,8 @@ class WatermarkExtractor
 
     /**
      * 参考水印图像数据（用于检测几何变换）
+     *
+     * @var array<int, array<int, int>>|null
      */
     protected ?array $referenceChannel = null;
 
@@ -79,15 +87,15 @@ class WatermarkExtractor
     public function __construct(?LoggerInterface $logger = null)
     {
         $this->logger = $logger ?? new NullLogger();
-        
+
         // 设置默认的对称位置（基于主位置的对称）
         $this->updateSymmetricPositions();
-        
+
         // 设置默认的多点提取位置
         $this->multiPoints = [
             [3, 5], // 附近的中频系数
             [4, 3],
-            [5, 3]
+            [5, 3],
         ];
     }
 
@@ -95,107 +103,91 @@ class WatermarkExtractor
      * 设置日志记录器
      *
      * @param LoggerInterface $logger 日志记录器
-     * @return self
      */
-    public function setLogger(LoggerInterface $logger): self
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
-        return $this;
     }
 
     /**
      * 设置DCT分块大小
      *
      * @param int $blockSize 分块大小
-     * @return self
      */
-    public function setBlockSize(int $blockSize): self
+    public function setBlockSize(int $blockSize): void
     {
         $this->blockSize = $blockSize;
         $this->logger->debug("设置DCT分块大小: {$blockSize}");
         // 更新对称位置
         $this->updateSymmetricPositions();
-        return $this;
     }
 
     /**
      * 设置水印嵌入位置
      *
-     * @param array $position 位置数组 [row, col]
-     * @return self
+     * @param array<int, int> $position 位置数组 [row, col]
      */
-    public function setPosition(array $position): self
+    public function setPosition(array $position): void
     {
         $this->position = $position;
         $this->logger->debug("设置水印提取位置: [{$position[0]},{$position[1]}]");
         // 更新对称位置
         $this->updateSymmetricPositions();
-        return $this;
     }
 
     /**
      * 启用或禁用对称性提取
      *
      * @param bool $enabled 是否启用
-     * @return self
      */
-    public function setSymmetricExtraction(bool $enabled): self
+    public function setSymmetricExtraction(bool $enabled): void
     {
         $this->useSymmetricExtraction = $enabled;
-        $this->logger->debug("对称性提取: " . ($enabled ? '启用' : '禁用'));
-        return $this;
+        $this->logger->debug('对称性提取: ' . ($enabled ? '启用' : '禁用'));
     }
 
     /**
      * 启用或禁用多点提取
      *
      * @param bool $enabled 是否启用
-     * @return self
      */
-    public function setMultiPointExtraction(bool $enabled): self
+    public function setMultiPointExtraction(bool $enabled): void
     {
         $this->useMultiPointExtraction = $enabled;
-        $this->logger->debug("多点提取: " . ($enabled ? '启用' : '禁用'));
-        return $this;
+        $this->logger->debug('多点提取: ' . ($enabled ? '启用' : '禁用'));
     }
 
     /**
      * 设置多点提取的位置集合
      *
-     * @param array $points 位置数组集合，每个元素为 [row, col]
-     * @return self
+     * @param array<int, array<int, int>> $points 位置数组集合，每个元素为 [row, col]
      */
-    public function setMultiPoints(array $points): self
+    public function setMultiPoints(array $points): void
     {
         $this->multiPoints = $points;
-        $this->logger->debug("设置多点提取位置集合，共 " . count($points) . " 个点");
-        return $this;
+        $this->logger->debug('设置多点提取位置集合，共 ' . count($points) . ' 个点');
     }
 
     /**
      * 启用或禁用几何变换修正
      *
      * @param bool $enabled 是否启用
-     * @return self
      */
-    public function setGeometricCorrection(bool $enabled): self
+    public function setGeometricCorrection(bool $enabled): void
     {
         $this->useGeometricCorrection = $enabled;
-        $this->logger->debug("几何变换修正: " . ($enabled ? '启用' : '禁用'));
-        return $this;
+        $this->logger->debug('几何变换修正: ' . ($enabled ? '启用' : '禁用'));
     }
 
     /**
      * 设置参考水印图像（用于检测几何变换）
      *
-     * @param array $referenceChannel 参考图像通道数据
-     * @return self
+     * @param array<int, array<int, int>> $referenceChannel 参考图像通道数据
      */
-    public function setReferenceChannel(array $referenceChannel): self
+    public function setReferenceChannel(array $referenceChannel): void
     {
         $this->referenceChannel = $referenceChannel;
-        $this->logger->debug("设置几何变换参考通道");
-        return $this;
+        $this->logger->debug('设置几何变换参考通道');
     }
 
     /**
@@ -210,47 +202,49 @@ class WatermarkExtractor
             // 垂直对称：使水印对垂直翻转具有鲁棒性
             [$this->blockSize - 1 - $this->position[0], $this->position[1]],
             // 对角对称：使水印对180度旋转具有鲁棒性
-            [$this->blockSize - 1 - $this->position[0], $this->blockSize - 1 - $this->position[1]]
+            [$this->blockSize - 1 - $this->position[0], $this->blockSize - 1 - $this->position[1]],
         ];
     }
 
     /**
      * 检测图像的几何变换并进行修正
      *
-     * @param array $channel 图像通道数据
-     * @return array 修正后的通道数据
+     * @param array<int, array<int, int>> $channel 图像通道数据
+     *
+     * @return array<int, array<int, int>> 修正后的通道数据
      */
     protected function correctGeometricTransformations(array $channel): array
     {
         // 如果未设置参考通道或未启用几何修正，则返回原始通道
-        if (!$this->useGeometricCorrection || $this->referenceChannel === null) {
+        if (!$this->useGeometricCorrection || null === $this->referenceChannel) {
             return $channel;
         }
-        
-        $this->logger->debug("开始检测几何变换...");
-        
+
+        $this->logger->debug('开始检测几何变换...');
+
         try {
             // 检测水平翻转
             $isHorizontalFlipped = GeometricTransform::detectHorizontalFlip($this->referenceChannel, $channel);
             if ($isHorizontalFlipped) {
-                $this->logger->info("检测到水平翻转");
+                $this->logger->info('检测到水平翻转');
             }
-            
+
             // 检测垂直翻转
             $isVerticalFlipped = GeometricTransform::detectVerticalFlip($this->referenceChannel, $channel);
             if ($isVerticalFlipped) {
-                $this->logger->info("检测到垂直翻转");
+                $this->logger->info('检测到垂直翻转');
             }
-            
+
             // 检测旋转
             $rotationAngle = GeometricTransform::detectRotation($this->referenceChannel, $channel);
             if ($rotationAngle > 0) {
                 $this->logger->info("检测到旋转：{$rotationAngle}度");
             }
-            
+
             // 执行几何变换修正
             if ($isHorizontalFlipped || $isVerticalFlipped || $rotationAngle > 0) {
-                $this->logger->info("执行几何变换修正...");
+                $this->logger->info('执行几何变换修正...');
+
                 return GeometricTransform::correctGeometricTransform(
                     $channel,
                     $isHorizontalFlipped,
@@ -259,17 +253,18 @@ class WatermarkExtractor
                 );
             }
         } catch (\Throwable $e) {
-            $this->logger->error("几何变换检测过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('几何变换检测过程中发生错误: ' . $e->getMessage(), ['exception' => $e]);
         }
-        
+
         return $channel;
     }
 
     /**
      * 从DCT块中提取水印比特
      *
-     * @param array $dctBlock DCT系数块
-     * @param array $position 提取位置
+     * @param array<int, array<int, float>> $dctBlock DCT系数块
+     * @param array<int, int>               $position 提取位置
+     *
      * @return int 提取的比特值(0或1)
      */
     protected function extractBitFromBlock(array $dctBlock, array $position): int
@@ -277,40 +272,41 @@ class WatermarkExtractor
         $row = $position[0];
         $col = $position[1];
         $coef = $dctBlock[$row][$col];
-        
+
         // 判断比特值
         return ($coef > 0) ? 1 : 0;
     }
-    
+
     /**
      * 从DCT块的多个位置提取水印比特，采用投票方式决定最终比特值
      *
-     * @param array $dctBlock DCT系数块
-     * @param array $mainPosition 主提取位置
-     * @param array $additionalPositions 附加提取位置
+     * @param array<int, array<int, float>> $dctBlock            DCT系数块
+     * @param array<int, int>               $mainPosition        主提取位置
+     * @param array<int, array<int, int>>   $additionalPositions 附加提取位置
+     *
      * @return int 提取的比特值(0或1)
      */
     protected function extractBitWithVoting(array $dctBlock, array $mainPosition, array $additionalPositions): int
     {
         // 首先获取主位置的比特值
         $mainBit = $this->extractBitFromBlock($dctBlock, $mainPosition);
-        
+
         // 如果没有附加位置，直接返回主位置的比特值
-        if (empty($additionalPositions)) {
+        if ([] === $additionalPositions) {
             return $mainBit;
         }
-        
+
         // 计算所有位置的投票结果
         $votes = [$mainBit => 1]; // 主位置的票数初始为1
-        
+
         foreach ($additionalPositions as $position) {
             $bit = $this->extractBitFromBlock($dctBlock, $position);
             if (!isset($votes[$bit])) {
                 $votes[$bit] = 0;
             }
-            $votes[$bit]++;
+            ++$votes[$bit];
         }
-        
+
         // 返回得票最多的比特值
         return (max([$votes[0] ?? 0, $votes[1] ?? 0]) === ($votes[0] ?? 0)) ? 0 : 1;
     }
@@ -318,74 +314,128 @@ class WatermarkExtractor
     /**
      * 从图像通道中提取水印比特
      *
-     * @param array $channel 图像通道数据
-     * @param int $bitsCount 要提取的比特数量
-     * @return array 提取的水印比特数组
+     * @param array<int, array<int, int>> $channel   图像通道数据
+     * @param int                         $bitsCount 要提取的比特数量
+     *
+     * @return array<int, int> 提取的水印比特数组
      */
     protected function extractWatermarkFromChannel(array $channel, int $bitsCount): array
     {
         try {
-            // 如果启用了几何变换修正，先进行修正
-            if ($this->useGeometricCorrection && $this->referenceChannel !== null) {
-                $channel = $this->correctGeometricTransformations($channel);
-            }
-            
-            // 对图像数据进行分块DCT变换
+            $channel = $this->preprocessChannel($channel);
             $dctBlocks = DCT::blockDCT($channel, $this->blockSize);
 
-            // 计算可提取的块数量
-            $blocksY = count($dctBlocks);
-            $blocksX = count($dctBlocks[0]);
-            $totalBlocks = $blocksX * $blocksY;
-            $this->logger->debug("可用DCT块数量: {$totalBlocks}");
-
-            // 确保提取的比特数量不超过可用块数
-            $bitsToExtract = min($bitsCount, $totalBlocks);
-            $this->logger->debug("计划提取比特数: {$bitsToExtract}");
-
-            // 提取水印比特
-            $bits = [];
-            $bitIndex = 0;
-
-            for ($by = 0; $by < $blocksY && $bitIndex < $bitsToExtract; $by++) {
-                for ($bx = 0; $bx < $blocksX && $bitIndex < $bitsToExtract; $bx++) {
-                    // 准备提取位置
-                    $extractionPositions = [];
-                    
-                    // 如果启用了对称性提取，添加对称位置
-                    if ($this->useSymmetricExtraction) {
-                        $extractionPositions = array_merge($extractionPositions, $this->symmetricPositions);
-                    }
-                    
-                    // 如果启用了多点提取，添加多点位置
-                    if ($this->useMultiPointExtraction) {
-                        $extractionPositions = array_merge($extractionPositions, $this->multiPoints);
-                    }
-                    
-                    // 如果有多个提取位置，采用投票方式提取比特
-                    if (!empty($extractionPositions)) {
-                        $bits[] = $this->extractBitWithVoting($dctBlocks[$by][$bx], $this->position, $extractionPositions);
-                    } else {
-                        // 否则使用单一位置提取
-                        $bits[] = $this->extractBitFromBlock($dctBlocks[$by][$bx], $this->position);
-                    }
-                    
-                    $bitIndex++;
-                }
-            }
-            
-            $this->logger->debug("实际提取比特数: " . count($bits));
-            return $bits;
+            return $this->extractBitsFromBlocks($dctBlocks, $bitsCount);
         } catch (\Throwable $e) {
-            $this->logger->error("提取水印比特过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('提取水印比特过程中发生错误: ' . $e->getMessage(), ['exception' => $e]);
+
             return [];
         }
     }
 
     /**
+     * 预处理通道数据
+     *
+     * @param array<int, array<int, int>> $channel
+     *
+     * @return array<int, array<int, int>>
+     */
+    private function preprocessChannel(array $channel): array
+    {
+        // 如果启用了几何变换修正，先进行修正
+        if ($this->useGeometricCorrection && null !== $this->referenceChannel) {
+            return $this->correctGeometricTransformations($channel);
+        }
+
+        return $channel;
+    }
+
+    /**
+     * 从 DCT 块中提取比特
+     *
+     * @param array<int, array<int, array<int, array<int, float>>>> $dctBlocks
+     *
+     * @return array<int, int>
+     */
+    private function extractBitsFromBlocks(array $dctBlocks, int $bitsCount): array
+    {
+        $blocksY = count($dctBlocks);
+        $blocksX = count($dctBlocks[0]);
+        $totalBlocks = $blocksX * $blocksY;
+
+        $this->logger->debug("可用DCT块数量: {$totalBlocks}");
+
+        $bitsToExtract = min($bitsCount, $totalBlocks);
+        $this->logger->debug("计划提取比特数: {$bitsToExtract}");
+
+        return $this->performBitExtraction($dctBlocks, $blocksY, $blocksX, $bitsToExtract);
+    }
+
+    /**
+     * 执行比特提取操作
+     *
+     * @param array<int, array<int, array<int, array<int, float>>>> $dctBlocks
+     *
+     * @return array<int, int>
+     */
+    private function performBitExtraction(array $dctBlocks, int $blocksY, int $blocksX, int $bitsToExtract): array
+    {
+        $bits = [];
+        $bitIndex = 0;
+
+        for ($by = 0; $by < $blocksY && $bitIndex < $bitsToExtract; ++$by) {
+            for ($bx = 0; $bx < $blocksX && $bitIndex < $bitsToExtract; ++$bx) {
+                $bits[] = $this->extractBitFromDCTBlock($dctBlocks[$by][$bx]);
+                ++$bitIndex;
+            }
+        }
+
+        $this->logger->debug('实际提取比特数: ' . count($bits));
+
+        return $bits;
+    }
+
+    /**
+     * 从 DCT 块中提取单个比特
+     *
+     * @param array<int, array<int, float>> $dctBlock
+     */
+    private function extractBitFromDCTBlock(array $dctBlock): int
+    {
+        $extractionPositions = $this->getExtractionPositions();
+
+        if ([] !== $extractionPositions) {
+            return $this->extractBitWithVoting($dctBlock, $this->position, $extractionPositions);
+        }
+
+        return $this->extractBitFromBlock($dctBlock, $this->position);
+    }
+
+    /**
+     * 获取提取位置
+     *
+     * @return array<int, array<int, int>>
+     */
+    private function getExtractionPositions(): array
+    {
+        $extractionPositions = [];
+
+        if ($this->useSymmetricExtraction) {
+            $extractionPositions = array_merge($extractionPositions, $this->symmetricPositions);
+        }
+
+        if ($this->useMultiPointExtraction) {
+            $extractionPositions = array_merge($extractionPositions, $this->multiPoints);
+        }
+
+        return $extractionPositions;
+    }
+
+    /**
      * 将比特数组转换为文本
      *
-     * @param array $bits 比特数组
+     * @param array<int, int> $bits 比特数组
+     *
      * @return string 转换后的文本
      */
     protected function bitsToText(array $bits): string
@@ -398,16 +448,18 @@ class WatermarkExtractor
             // 每8位比特转换为一个字符
             for ($i = 0; $i + 7 < $bitsCount; $i += 8) {
                 $byte = 0;
-                for ($j = 0; $j < 8; $j++) {
+                for ($j = 0; $j < 8; ++$j) {
                     $byte = ($byte << 1) | $bits[$i + $j];
                 }
                 $text .= chr($byte);
             }
-            
-            $this->logger->debug("转换完成，文本长度: " . strlen($text) . " 字符");
+
+            $this->logger->debug('转换完成，文本长度: ' . strlen($text) . ' 字符');
+
             return $text;
         } catch (\Throwable $e) {
-            $this->logger->error("比特转文本过程中发生错误: " . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('比特转文本过程中发生错误: ' . $e->getMessage(), ['exception' => $e]);
+
             return '';
         }
     }
@@ -416,27 +468,29 @@ class WatermarkExtractor
      * 从带水印图像中提取文本水印
      *
      * @param ImageProcessor $image 带水印图像处理器
+     *
      * @return string 提取的文本水印
      */
     public function extract(ImageProcessor $image): string
     {
         try {
-            $this->logger->info("开始提取水印");
-            
+            $this->logger->info('开始提取水印');
+
             // 分离图像通道
             $channels = $image->splitChannels();
 
             // 先提取足够的比特用于获取水印长度
             $initialBitsToExtract = 256; // 至少包含16位长度信息和一些水印数据
-            $this->logger->debug("提取初始比特用于获取水印长度信息");
+            $this->logger->debug('提取初始比特用于获取水印长度信息');
             $extractedBits = $this->extractWatermarkFromChannel($channels['blue'], $initialBitsToExtract);
-            
+
             // 如果提取的比特不足以包含长度信息（16位），则无法继续处理
             if (count($extractedBits) < 16) {
-                $this->logger->error("提取的比特不足16位，无法读取长度信息");
+                $this->logger->error('提取的比特不足16位，无法读取长度信息');
+
                 return '';
             }
-            
+
             // 解析水印长度信息（头16位）
             $lengthBits = array_slice($extractedBits, 0, 16);
             $lengthDebug = implode('', $lengthBits);
@@ -446,6 +500,7 @@ class WatermarkExtractor
             // 验证长度的合理性
             if ($watermarkLength <= 0 || $watermarkLength > 8192 * 8) {
                 $this->logger->error("水印长度不合理: {$watermarkLength}");
+
                 return '';
             }
 
@@ -453,26 +508,28 @@ class WatermarkExtractor
             $totalBitsNeeded = 16 + $watermarkLength;
             if (count($extractedBits) < $totalBitsNeeded) {
                 $this->logger->debug("需要提取更多比特: {$totalBitsNeeded}");
-                
+
                 // 重新提取足够数量的比特
-                $extractedBits = $this->extractWatermarkFromChannel($channels['blue'], $totalBitsNeeded);
-                
+                $extractedBits = $this->extractWatermarkFromChannel($channels['blue'], (int) $totalBitsNeeded);
+
                 if (count($extractedBits) < $totalBitsNeeded) {
-                    $this->logger->error("无法提取足够的比特: 需要 " . $totalBitsNeeded . ", 实际 " . count($extractedBits));
+                    $this->logger->error('无法提取足够的比特: 需要 ' . $totalBitsNeeded . ', 实际 ' . count($extractedBits));
+
                     return '';
                 }
             }
 
             // 提取水印数据部分比特（跳过长度信息）
-            $watermarkBits = array_slice($extractedBits, 16, $watermarkLength);
-            
+            $watermarkBits = array_slice($extractedBits, 16, (int) $watermarkLength);
+
             // 将比特转换为文本
             $text = $this->bitsToText($watermarkBits);
-            $this->logger->info("水印提取完成，文本长度: " . strlen($text) . " 字符");
-            
+            $this->logger->info('水印提取完成，文本长度: ' . strlen($text) . ' 字符');
+
             return $text;
         } catch (\Throwable $e) {
-            $this->logger->error("提取水印过程中发生异常: " . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('提取水印过程中发生异常: ' . $e->getMessage(), ['exception' => $e]);
+
             return '';
         }
     }

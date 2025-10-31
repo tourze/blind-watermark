@@ -2,11 +2,23 @@
 
 namespace Tourze\BlindWatermark\Tests\Exception;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Tourze\BlindWatermark\Exception\BlindWatermarkException;
+use Tourze\PHPUnitBase\AbstractExceptionTestCase;
 
-class BlindWatermarkExceptionTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(BlindWatermarkException::class)]
+final class BlindWatermarkExceptionTest extends AbstractExceptionTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Exception 测试不需要特殊的设置
+    }
+
     public function testExceptionConstants(): void
     {
         $this->assertEquals(100, BlindWatermarkException::ERROR_IMAGE_PROCESSING);

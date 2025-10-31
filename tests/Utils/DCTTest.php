@@ -2,11 +2,23 @@
 
 namespace Tourze\BlindWatermark\Tests\Utils;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Tourze\BlindWatermark\Utils\DCT;
 
-class DCTTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(DCT::class)]
+final class DCTTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // DCT 测试不需要特殊的设置
+    }
+
     /**
      * 测试DCT正变换和逆变换恢复原始矩阵
      */
@@ -17,7 +29,7 @@ class DCTTest extends TestCase
             [120, 90, 80, 70],
             [100, 110, 120, 130],
             [80, 85, 90, 95],
-            [70, 75, 80, 85]
+            [70, 75, 80, 85],
         ];
 
         // 进行DCT正变换
@@ -27,11 +39,16 @@ class DCTTest extends TestCase
         $recoveredMatrix = DCT::inverse($dctMatrix);
 
         // 验证恢复的矩阵与原始矩阵近似相等（考虑浮点误差）
-        for ($i = 0; $i < count($matrix); $i++) {
-            for ($j = 0; $j < count($matrix[0]); $j++) {
+        $assertionCount = 0;
+        for ($i = 0; $i < count($matrix); ++$i) {
+            for ($j = 0; $j < count($matrix[0]); ++$j) {
                 $this->assertEqualsWithDelta($matrix[$i][$j], $recoveredMatrix[$i][$j], 0.5);
+                ++$assertionCount;
             }
         }
+
+        // 确保至少执行了一些断言
+        $this->assertGreaterThan(0, $assertionCount, '应该至少执行了一些断言');
     }
 
     /**
@@ -55,9 +72,9 @@ class DCTTest extends TestCase
     {
         // 创建测试图像数据 (8x8)
         $imageData = [];
-        for ($i = 0; $i < 8; $i++) {
+        for ($i = 0; $i < 8; ++$i) {
             $imageData[$i] = [];
-            for ($j = 0; $j < 8; $j++) {
+            for ($j = 0; $j < 8; ++$j) {
                 $imageData[$i][$j] = ($i * 8 + $j) % 256; // 0-255之间的值
             }
         }
@@ -70,11 +87,16 @@ class DCTTest extends TestCase
         $recoveredImage = DCT::blockIDCT($dctBlocks, 8, 8, $blockSize);
 
         // 验证恢复的图像与原始图像近似相等
-        for ($i = 0; $i < 8; $i++) {
-            for ($j = 0; $j < 8; $j++) {
+        $assertionCount = 0;
+        for ($i = 0; $i < 8; ++$i) {
+            for ($j = 0; $j < 8; ++$j) {
                 $this->assertEqualsWithDelta($imageData[$i][$j], $recoveredImage[$i][$j], 1.0);
+                ++$assertionCount;
             }
         }
+
+        // 确保至少执行了一些断言
+        $this->assertGreaterThan(0, $assertionCount, '应该至少执行了一些断言');
     }
 
     /**
@@ -84,9 +106,9 @@ class DCTTest extends TestCase
     {
         // 创建测试图像数据 (10x12)
         $imageData = [];
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 10; ++$i) {
             $imageData[$i] = [];
-            for ($j = 0; $j < 12; $j++) {
+            for ($j = 0; $j < 12; ++$j) {
                 $imageData[$i][$j] = ($i * 12 + $j) % 256;
             }
         }
@@ -99,11 +121,16 @@ class DCTTest extends TestCase
         $recoveredImage = DCT::blockIDCT($dctBlocks, 10, 12, $blockSize);
 
         // 验证恢复的图像与原始图像近似相等
-        for ($i = 0; $i < 10; $i++) {
-            for ($j = 0; $j < 12; $j++) {
+        $assertionCount = 0;
+        for ($i = 0; $i < 10; ++$i) {
+            for ($j = 0; $j < 12; ++$j) {
                 $this->assertEqualsWithDelta($imageData[$i][$j], $recoveredImage[$i][$j], 1.0);
+                ++$assertionCount;
             }
         }
+
+        // 确保至少执行了一些断言
+        $this->assertGreaterThan(0, $assertionCount, '应该至少执行了一些断言');
     }
 
     /**
@@ -128,10 +155,13 @@ class DCTTest extends TestCase
         // 简单矩阵示例
         $matrix = [
             [1, 1],
-            [1, 1]
+            [1, 1],
         ];
 
         $dctMatrix = DCT::forward($matrix);
+
+        // 确保 DCT 变换结果不为空
+        $this->assertNotEmpty($dctMatrix, 'DCT 变换结果不应为空');
 
         // 第一个系数应该是矩阵平均值的倍数
         $this->assertEqualsWithDelta(2.0, $dctMatrix[0][0], 0.1);

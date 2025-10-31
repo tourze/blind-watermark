@@ -1,17 +1,18 @@
 {
   "name": "tourze/blind-watermark",
-  "description": "盲水印",
+  "description": "数字图像盲水印嵌入和提取库，支持图像变换和攻击检测",
   "type": "library",
   "license": "MIT",
   "require": {
-    "php": "^8.1",
     "ext-gd": "*",
     "psr/log": "^3|^2|^1"
   },
   "require-dev": {
-    "brianium/paratest": "7.4.*",
     "phpstan/phpstan": "^2.1",
-    "phpunit/phpunit": "^10.0"
+    "phpunit/phpunit": "^11.5",
+    "symfony/framework-bundle": "^7.3",
+    "tourze/phpunit-base": "1.*",
+    "tourze/symfony-testing-framework": "0.0.*"
   },
   "autoload": {
     "psr-4": {
