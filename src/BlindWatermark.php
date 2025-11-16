@@ -108,7 +108,7 @@ class BlindWatermark
     /**
      * 设置水印嵌入位置
      *
-     * @param array<int> $position 位置数组 [row, col]
+     * @param array<int, int> $position 位置数组 [row, col]
      */
     public function setPosition(array $position): void
     {
